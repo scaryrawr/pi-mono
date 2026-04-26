@@ -1,0 +1,15 @@
+{
+  "name": "pi-lmstudio-ollama",
+  "version": "1.0.0",
+  "description": "",
+  "license": "MIT",
+  "author": "",
+  "type": "module",
+  "scripts": {
+    "build": "tsgo -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@mariozechner/pi-coding-agent": "^0.70.2",
+    "@typescript/native-preview": "^7.0.0-dev.20260425.1"
+  }
+}
