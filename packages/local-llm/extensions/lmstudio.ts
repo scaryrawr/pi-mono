@@ -28,7 +28,7 @@ export default async function (pi: ExtensionAPI) {
   pi.registerProvider("lmstudio", {
     baseUrl: `${LMSTUDIO_BASE_URL}/v1`,
     apiKey: "LOCAL_OPENAI_API_KEY",
-    api: "openai-responses",
+    api: "openai-completions",
     models: payload.models.map((model) => ({
       id: model.key ?? model.key,
       name: model.display_name ?? model.key,

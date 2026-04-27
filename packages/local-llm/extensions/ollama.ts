@@ -41,7 +41,7 @@ export default async function (pi: ExtensionAPI) {
   pi.registerProvider("ollama", {
     baseUrl: `${OLLAMA_BASE_URL}/v1`,
     apiKey: "ollama",
-    api: "openai-responses",
+    api: "openai-completions",
     models: payload.models.map((model) => ({
       id: model.name,
       name: model.model ?? model.name,
