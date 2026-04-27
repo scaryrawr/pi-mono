@@ -1,12 +1,11 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
+const LMSTUDIO_BASE_URL = process.env.LMSTUDIO_BASE_URL ?? "http://localhost:1234";
+
 async function fetchLmStudioModels() {
   try {
-    const response = await fetch("http://localhost:1234/api/v1/models");
+    const response = await fetch(`${LMSTUDIO_BASE_URL}/api/v1/models`);
     if (!response.ok) {
-      console.warn(
-        `Skipping LM Studio provider registration: failed to fetch models (${response.status} ${response.statusText})`,
-      );
       return undefined;
     }
 
@@ -18,7 +17,6 @@ async function fetchLmStudioModels() {
       }>;
     };
   } catch (error) {
-    console.warn("Skipping LM Studio provider registration: failed to fetch models", error);
     return undefined;
   }
 }
@@ -28,7 +26,7 @@ export default async function (pi: ExtensionAPI) {
   if (payload === undefined) return;
 
   pi.registerProvider("lmstudio", {
-    baseUrl: "http://localhost:1234/v1",
+    baseUrl: `${LMSTUDIO_BASE_URL}/v1`,
     apiKey: "LOCAL_OPENAI_API_KEY",
     api: "openai-responses",
     models: payload.models.map((model) => ({
@@ -37,10 +35,10 @@ export default async function (pi: ExtensionAPI) {
       reasoning: true,
       input: ["text", "image"],
       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-      contextWindow: model.max_context_length ?? 128000,
+      contextWindow: model.max_context_length ?? 131_072,
       maxTokens: model.max_context_length
-        ? Math.min(16384, Math.floor(model.max_context_length / 4))
-        : 16384,
+        ? Math.min(32_768, Math.floor(model.max_context_length / 4))
+        : 32_768,
     })),
   });
 }

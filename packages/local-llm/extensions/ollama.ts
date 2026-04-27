@@ -1,7 +1,8 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
-const OLLAMA_CONTEXT_LENGTH = parseContextLength(process.env.OLLAMA_CONTEXT_LENGTH) ?? 262_144;
-const OLLAMA_MAX_TOKENS = Math.min(16_384, Math.floor(OLLAMA_CONTEXT_LENGTH / 4));
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
+const OLLAMA_CONTEXT_LENGTH = parseContextLength(process.env.OLLAMA_CONTEXT_LENGTH) ?? 131_072;
+const OLLAMA_MAX_TOKENS = Math.min(32_768, Math.floor(OLLAMA_CONTEXT_LENGTH / 4));
 
 function parseContextLength(value: string | undefined) {
   if (value === undefined) return undefined;
@@ -17,11 +18,8 @@ function parseContextLength(value: string | undefined) {
 
 async function fetchOllamaModels() {
   try {
-    const response = await fetch("http://localhost:11434/api/tags");
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`);
     if (!response.ok) {
-      console.warn(
-        `Skipping Ollama provider registration: failed to fetch models (${response.status} ${response.statusText})`,
-      );
       return undefined;
     }
 
@@ -32,7 +30,6 @@ async function fetchOllamaModels() {
       }>;
     };
   } catch (error) {
-    console.warn("Skipping Ollama provider registration: failed to fetch models", error);
     return undefined;
   }
 }
@@ -42,7 +39,7 @@ export default async function (pi: ExtensionAPI) {
   if (payload === undefined) return;
 
   pi.registerProvider("ollama", {
-    baseUrl: "http://localhost:11434/v1",
+    baseUrl: `${OLLAMA_BASE_URL}/v1`,
     apiKey: "ollama",
     api: "openai-responses",
     models: payload.models.map((model) => ({
