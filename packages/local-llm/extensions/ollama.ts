@@ -1,6 +1,8 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
+const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY ?? "ollama";
+
 const OLLAMA_CONTEXT_LENGTH = parseContextLength(process.env.OLLAMA_CONTEXT_LENGTH) ?? 131_072;
 const OLLAMA_MAX_TOKENS = Math.min(32_768, Math.floor(OLLAMA_CONTEXT_LENGTH / 4));
 
@@ -9,7 +11,6 @@ function parseContextLength(value: string | undefined) {
 
   const contextLength = Number.parseInt(value, 10);
   if (!Number.isFinite(contextLength) || contextLength <= 0) {
-    console.warn(`Ignoring invalid OLLAMA_CONTEXT_LENGTH: ${value}`);
     return undefined;
   }
 
@@ -18,7 +19,10 @@ function parseContextLength(value: string | undefined) {
 
 async function fetchOllamaModels() {
   try {
-    const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`);
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`, {
+      headers: { Authorization: `Bearer ${OLLAMA_API_KEY}` },
+    });
+
     if (!response.ok) {
       return undefined;
     }
@@ -29,7 +33,7 @@ async function fetchOllamaModels() {
         model?: string;
       }>;
     };
-  } catch (error) {
+  } catch {
     return undefined;
   }
 }
@@ -40,7 +44,7 @@ export default async function (pi: ExtensionAPI) {
 
   pi.registerProvider("ollama", {
     baseUrl: `${OLLAMA_BASE_URL}/v1`,
-    apiKey: "ollama",
+    apiKey: OLLAMA_API_KEY,
     api: "openai-completions",
     models: payload.models.map((model) => ({
       id: model.name,

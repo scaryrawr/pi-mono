@@ -1,10 +1,14 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 const LMSTUDIO_BASE_URL = process.env.LMSTUDIO_BASE_URL ?? "http://localhost:1234";
+const LMSTUDIO_API_KEY = process.env.LMSTUDIO_API_KEY ?? "lmstudio";
 
 async function fetchLmStudioModels() {
   try {
-    const response = await fetch(`${LMSTUDIO_BASE_URL}/api/v1/models`);
+    const response = await fetch(`${LMSTUDIO_BASE_URL}/api/v1/models`, {
+      headers: { Authorization: `Bearer ${LMSTUDIO_API_KEY}` },
+    });
+
     if (!response.ok) {
       return undefined;
     }
@@ -16,7 +20,7 @@ async function fetchLmStudioModels() {
         max_context_length?: number;
       }>;
     };
-  } catch (error) {
+  } catch {
     return undefined;
   }
 }
@@ -27,7 +31,7 @@ export default async function (pi: ExtensionAPI) {
 
   pi.registerProvider("lmstudio", {
     baseUrl: `${LMSTUDIO_BASE_URL}/v1`,
-    apiKey: "LOCAL_OPENAI_API_KEY",
+    apiKey: LMSTUDIO_API_KEY,
     api: "openai-completions",
     models: payload.models.map((model) => ({
       id: model.key ?? model.key,
