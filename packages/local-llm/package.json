@@ -6,10 +6,24 @@
   "author": "",
   "type": "module",
   "scripts": {
-    "build": "tsgo -p tsconfig.json"
+    "build": "tsgo -p tsconfig.json",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "lint": "oxlint -c .oxlintrc.json --tsconfig ./tsconfig.json extensions/*.ts",
+    "lint:fix": "oxlint -c .oxlintrc.json --fix --tsconfig ./tsconfig.json extensions/*.ts"
   },
   "devDependencies": {
     "@mariozechner/pi-coding-agent": "^0.70.2",
-    "@typescript/native-preview": "^7.0.0-dev.20260425.1"
+    "@typescript/native-preview": "^7.0.0-dev.20260425.1",
+    "oxfmt": "^0.48.0",
+    "oxlint": "^1.63.0",
+    "oxlint-tsgolint": "^0.22.1"
+  },
+  "pi": {
+    "extensions": [
+      "extensions/ollama.ts",
+      "extensions/lmstudio.ts",
+      "extensions/omlx.ts"
+    ]
   }
 }
