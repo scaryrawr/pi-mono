@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const OMLX_BASE_URL = process.env.OMLX_BASE_URL ?? "http://localhost:8000";
 const OMLX_API_KEY = process.env.OMLX_API_KEY ?? "omlx";

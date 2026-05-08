@@ -13,7 +13,7 @@
     "lint:fix": "oxlint -c .oxlintrc.json --fix --tsconfig ./tsconfig.json extensions/*.ts"
   },
   "devDependencies": {
-    "@mariozechner/pi-coding-agent": "^0.70.2",
+    "@earendil-works/pi-coding-agent": "^0.74.0",
     "@typescript/native-preview": "^7.0.0-dev.20260425.1",
     "oxfmt": "^0.48.0",
     "oxlint": "^1.63.0",

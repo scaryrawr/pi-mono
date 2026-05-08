@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const LMSTUDIO_BASE_URL = process.env.LMSTUDIO_BASE_URL ?? "http://localhost:1234";
 const LMSTUDIO_API_KEY = process.env.LMSTUDIO_API_KEY ?? "lmstudio";
