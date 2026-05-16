@@ -1,4 +1,4 @@
-# pi-lmstudio-ollama
+# pi-local-llm
 
 ## Architecture
 
