@@ -24,7 +24,7 @@ async function fetchOMLXModels() {
         id: string;
         max_context_window: number;
         max_tokens: number;
-        engine_type: "vlm" | "llm" | (string & {});
+        model_type: "vlm" | "llm" | (string & {});
       }>;
     };
   } catch {
@@ -41,13 +41,13 @@ export default async function (pi: ExtensionAPI) {
     apiKey: OMLX_API_KEY,
     api: "openai-completions",
     models: payload.models
-      .filter((m) => isLLM(m.engine_type))
+      .filter((m) => isLLM(m.model_type))
       .map((model) => {
         return {
           id: model.id,
           name: model.id,
           reasoning: true,
-          input: model.engine_type === "vlm" ? ["text", "image"] : ["text"],
+          input: ["text", "image"],
           cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
           contextWindow: model.max_context_window,
           maxTokens: model.max_tokens,
