@@ -22,6 +22,7 @@
   "pi": {
     "extensions": [
       "extensions/ollama.ts",
+      "extensions/osaurus.ts",
       "extensions/lmstudio.ts",
       "extensions/omlx.ts"
     ]
