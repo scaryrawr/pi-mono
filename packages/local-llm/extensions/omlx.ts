@@ -25,6 +25,7 @@ async function fetchOMLXModels() {
         max_context_window: number;
         max_tokens: number;
         model_type: "vlm" | "llm" | (string & {});
+        config_model_type: "gemma4_assistant" | "gemma4_unified_assistant" | (string & {});
       }>;
     };
   } catch {
@@ -41,7 +42,7 @@ export default async function (pi: ExtensionAPI) {
     apiKey: OMLX_API_KEY,
     api: "openai-completions",
     models: payload.models
-      .filter((m) => isLLM(m.model_type))
+      .filter((m) => isLLM(m.model_type) && !m.config_model_type.includes("assistant"))
       .map((model) => {
         return {
           id: model.id,
