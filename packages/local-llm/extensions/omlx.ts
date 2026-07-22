@@ -42,7 +42,7 @@ export default async function (pi: ExtensionAPI) {
     apiKey: OMLX_API_KEY,
     api: "openai-completions",
     models: payload.models
-      .filter((m) => isLLM(m.model_type) && m.engine_type !== "batched")
+      .filter((m) => isLLM(m.model_type))
       .map((model) => {
         return {
           id: model.id,
