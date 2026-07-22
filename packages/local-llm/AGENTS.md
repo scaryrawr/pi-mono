@@ -18,6 +18,7 @@ There are no tests — this is a small plugin. Focus on correctness, clean code,
 - **API key defaults**: use low-security placeholder values (`"ollama"`, `"lmstudio"`, `"omlx"`) — matching existing style.
 - **Model mapping**: always map provider model metadata to the pi `ProviderModel` interface with `reasoning: false` for Ollama, `reasoning: true` for LM Studio/OMLX (matching current code).
 - **Format/lint**: `npm run fmt`, `npm run fmt:check`, `npm run lint`, `npm run lint:fix`. No test command exists.
+- **Lint dependencies**: when upgrading `oxlint`, update `oxlint-tsgolint` to satisfy the version declared by `oxlint`'s optional peer dependency; mismatched versions cause npm `ERESOLVE` failures.
 - **Build**: `npm run build` (tsgo type-check only, no emit).
 
 ## Safety

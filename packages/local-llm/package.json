@@ -13,11 +13,12 @@
     "lint:fix": "oxlint -c .oxlintrc.json --fix --tsconfig ./tsconfig.json extensions/*.ts"
   },
   "devDependencies": {
-    "@earendil-works/pi-coding-agent": "^0.74.0",
+    "@earendil-works/pi-coding-agent": "^0.81.1",
+    "@types/node": "^26.1.1",
     "@typescript/native-preview": "^7.0.0-dev.20260425.1",
     "oxfmt": "^0.48.0",
     "oxlint": "^1.63.0",
-    "oxlint-tsgolint": "^0.22.1"
+    "oxlint-tsgolint": "^7.0.2001"
   },
   "pi": {
     "extensions": [
