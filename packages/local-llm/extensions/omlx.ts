@@ -33,7 +33,7 @@ async function fetchOMLXModels() {
   }
 }
 
-export default async function (pi: ExtensionAPI) {
+const omlx = async function (pi: ExtensionAPI) {
   const payload = await fetchOMLXModels();
   if (payload === undefined) return;
 
@@ -56,3 +56,6 @@ export default async function (pi: ExtensionAPI) {
       }),
   });
 }
+
+export default omlx;
+export { omlx };

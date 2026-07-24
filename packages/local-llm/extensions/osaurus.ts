@@ -38,7 +38,7 @@ async function fetchOsaurusModels() {
   }
 }
 
-export default async function (pi: ExtensionAPI) {
+const osaurus = async function (pi: ExtensionAPI) {
   const payload = await fetchOsaurusModels();
   if (payload === undefined) return;
 
@@ -57,3 +57,6 @@ export default async function (pi: ExtensionAPI) {
     })),
   });
 }
+
+export default osaurus;
+export { osaurus };

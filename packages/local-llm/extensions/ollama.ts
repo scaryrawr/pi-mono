@@ -38,7 +38,7 @@ async function fetchOllamaModels() {
   }
 }
 
-export default async function (pi: ExtensionAPI) {
+const ollama = async function (pi: ExtensionAPI) {
   const payload = await fetchOllamaModels();
   if (payload === undefined) return;
 
@@ -57,3 +57,6 @@ export default async function (pi: ExtensionAPI) {
     })),
   });
 }
+
+export default ollama;
+export { ollama };

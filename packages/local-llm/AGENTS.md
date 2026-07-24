@@ -14,6 +14,7 @@ There are no tests — this is a small plugin. Focus on correctness, clean code,
 
 - **TypeScript**: strict mode, ES2024, NodeNext module resolution.
 - **Naming**: file names are kebab-case (`extensions/ollama.ts`). Function names use PascalCase for types, camelCase for functions.
+- **Extension exports**: each extension uses both `export default` (for pi harness consumption) and a named export (e.g., `export { ollama }`) so the package is consumable as a library via the `exports` field in `package.json`.
 - **Error handling**: wrap `fetch` calls in `try/catch`, return `undefined` on failure. Extensions silently skip registration if the provider is unavailable.
 - **API key defaults**: use low-security placeholder values (`"ollama"`, `"lmstudio"`, `"omlx"`) — matching existing style.
 - **Model mapping**: always map provider model metadata to the pi `ProviderModel` interface with `reasoning: false` for Ollama, `reasoning: true` for LM Studio/OMLX (matching current code).

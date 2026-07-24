@@ -25,7 +25,7 @@ async function fetchLmStudioModels() {
   }
 }
 
-export default async function (pi: ExtensionAPI) {
+const lmstudio = async function (pi: ExtensionAPI) {
   const payload = await fetchLmStudioModels();
   if (payload === undefined) return;
 
@@ -46,3 +46,6 @@ export default async function (pi: ExtensionAPI) {
     })),
   });
 }
+
+export default lmstudio;
+export { lmstudio };
