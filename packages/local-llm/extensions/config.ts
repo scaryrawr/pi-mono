@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
 
@@ -75,6 +75,67 @@ export function loadLocalLlmConfig(): LocalLlmConfig {
   }
 
   return { providers: record.providers as Record<string, unknown> };
+}
+
+/**
+ * Read the raw config object from the file.
+ *
+ * Returns `{}` when the file is missing or malformed. Unlike
+ * `loadLocalLlmConfig()`, unknown keys are preserved so round-trips do not
+ * drop user data.
+ */
+export function readLocalLlmConfigRaw(): Record<string, unknown> {
+  let raw: string;
+  try {
+    raw = readFileSync(getLocalLlmConfigPath(), "utf8");
+  } catch {
+    return {};
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return {};
+  }
+
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return {};
+  }
+
+  return parsed as Record<string, unknown>;
+}
+
+/**
+ * Set a provider's `enabled` flag in the config file.
+ *
+ * Preserves all other existing fields (`baseUrl`, `apiKey`, `contextLength`,
+ * unknown keys). Creates the file (and agent directory) when missing.
+ */
+export function setProviderEnabled(name: string, enabled: boolean): void {
+  const config = readLocalLlmConfigRaw();
+
+  const providers = config.providers;
+  const providerRecord =
+    typeof providers === "object" && providers !== null && !Array.isArray(providers)
+      ? (providers as Record<string, unknown>)
+      : {};
+
+  const entry = providerRecord[name];
+  const entryRecord =
+    typeof entry === "object" && entry !== null && !Array.isArray(entry)
+      ? (entry as Record<string, unknown>)
+      : {};
+  entryRecord.enabled = enabled;
+  providerRecord[name] = entryRecord;
+
+  const path = getLocalLlmConfigPath();
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(
+    path,
+    `${JSON.stringify({ ...config, providers: providerRecord }, null, 2)}\n`,
+    "utf8",
+  );
 }
 
 /**

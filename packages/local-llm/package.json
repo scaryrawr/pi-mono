@@ -7,6 +7,7 @@
   "type": "module",
   "exports": {
     "./extensions/config": "./extensions/config.ts",
+    "./extensions/local-ai": "./extensions/local-ai.ts",
     "./extensions/ollama": "./extensions/ollama.ts",
     "./extensions/lmstudio": "./extensions/lmstudio.ts",
     "./extensions/omlx": "./extensions/omlx.ts",
@@ -29,6 +30,7 @@
   },
   "pi": {
     "extensions": [
+      "extensions/local-ai.ts",
       "extensions/ollama.ts",
       "extensions/osaurus.ts",
       "extensions/lmstudio.ts",
