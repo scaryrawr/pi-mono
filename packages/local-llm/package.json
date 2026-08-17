@@ -5,6 +5,13 @@
   "license": "MIT",
   "author": "",
   "type": "module",
+  "exports": {
+    "./extensions/config": "./extensions/config.ts",
+    "./extensions/ollama": "./extensions/ollama.ts",
+    "./extensions/lmstudio": "./extensions/lmstudio.ts",
+    "./extensions/omlx": "./extensions/omlx.ts",
+    "./extensions/osaurus": "./extensions/osaurus.ts"
+  },
   "scripts": {
     "build": "tsgo -p tsconfig.json",
     "fmt": "oxfmt",
@@ -19,12 +26,6 @@
     "oxfmt": "^0.48.0",
     "oxlint": "^1.63.0",
     "oxlint-tsgolint": "^7.0.2001"
-  },
-  "exports": {
-    "./extensions/ollama": "./extensions/ollama.ts",
-    "./extensions/lmstudio": "./extensions/lmstudio.ts",
-    "./extensions/omlx": "./extensions/omlx.ts",
-    "./extensions/osaurus": "./extensions/osaurus.ts"
   },
   "pi": {
     "extensions": [

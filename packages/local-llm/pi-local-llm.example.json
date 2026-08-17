@@ -1,0 +1,26 @@
+{
+  "providers": {
+    "ollama": {
+      "enabled": true,
+      "baseUrl": "http://localhost:11434",
+      "apiKey": "ollama",
+      "contextLength": 131072
+    },
+    "osaurus": {
+      "enabled": false,
+      "baseUrl": "http://localhost:1337",
+      "apiKey": "osaurus",
+      "contextLength": 131072
+    },
+    "lmstudio": {
+      "enabled": false,
+      "baseUrl": "http://localhost:1234",
+      "apiKey": "lmstudio"
+    },
+    "omlx": {
+      "enabled": false,
+      "baseUrl": "http://localhost:8000",
+      "apiKey": "omlx"
+    }
+  }
+}

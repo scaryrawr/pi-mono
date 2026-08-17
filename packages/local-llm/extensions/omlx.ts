@@ -1,17 +1,19 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-const OMLX_BASE_URL = process.env.OMLX_BASE_URL ?? "http://localhost:8000";
-const OMLX_API_KEY = process.env.OMLX_API_KEY ?? "omlx";
+import { loadProviderConfig } from "./config.ts";
+
+const DEFAULT_BASE_URL = "http://localhost:8000";
+const DEFAULT_API_KEY = "omlx";
 
 function isLLM(engineType: string): engineType is "llm" | "vlm" {
   return engineType === "llm" || engineType === "vlm";
 }
 
-async function fetchOMLXModels() {
+async function fetchOMLXModels(baseUrl: string, apiKey: string) {
   try {
-    const response = await fetch(`${OMLX_BASE_URL}/v1/models/status`, {
+    const response = await fetch(`${baseUrl}/v1/models/status`, {
       headers: {
-        Authorization: `Bearer ${OMLX_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
     });
 
@@ -34,12 +36,18 @@ async function fetchOMLXModels() {
 }
 
 const omlx = async function (pi: ExtensionAPI) {
-  const payload = await fetchOMLXModels();
+  const config = loadProviderConfig("omlx");
+  if (config?.enabled !== true) return;
+
+  const baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
+  const apiKey = config.apiKey ?? DEFAULT_API_KEY;
+
+  const payload = await fetchOMLXModels(baseUrl, apiKey);
   if (payload === undefined) return;
 
   pi.registerProvider("omlx", {
-    baseUrl: `${OMLX_BASE_URL}/v1`,
-    apiKey: OMLX_API_KEY,
+    baseUrl: `${baseUrl}/v1`,
+    apiKey,
     api: "openai-completions",
     models: payload.models
       .filter((m) => isLLM(m.model_type))
@@ -55,7 +63,7 @@ const omlx = async function (pi: ExtensionAPI) {
         };
       }),
   });
-}
+};
 
 export default omlx;
 export { omlx };

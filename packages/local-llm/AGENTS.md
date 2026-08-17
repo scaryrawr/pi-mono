@@ -2,11 +2,16 @@
 
 ## Architecture
 
-Single-purpose pi coding agent plugin exposing three local AI providers (Ollama, LM Studio, OMLX) as VS Code extensions. Each extension in `extensions/` follows an identical pattern:
+Single-purpose pi coding agent plugin exposing four local AI providers (Ollama, LM Studio, OMLX, Osaurus). Each extension in `extensions/` follows an identical pattern:
 
-1. Read env vars for base URL and API key (with sensible defaults)
-2. Fetch available models from the provider's API
-3. Call `pi.registerProvider()` to register each model with the pi agent SDK
+1. Load the provider's opt-in settings from the shared config file via `extensions/config.ts`
+2. Return early (no registration) unless the provider is enabled in the config
+3. Fetch available models from the provider's API
+4. Call `pi.registerProvider()` to register each model with the pi agent SDK
+
+### Configuration
+
+All settings come from a single JSON config file at `<agentDir>/pi-local-llm.json` (default `~/.pi/agent/pi-local-llm.json`; pi's `getAgentDir()` honors the `PI_CODING_AGENT_DIR` override). There are no env vars for provider settings. Providers are **opt-in**: a provider registers models only when its `enabled` field is explicitly `true`. `pi-local-llm.example.json` shows the full schema. A missing or malformed config file is treated as "no providers configured", so pi always starts cleanly.
 
 There are no tests — this is a small plugin. Focus on correctness, clean code, and matching existing patterns.
 
@@ -14,10 +19,11 @@ There are no tests — this is a small plugin. Focus on correctness, clean code,
 
 - **TypeScript**: strict mode, ES2024, NodeNext module resolution.
 - **Naming**: file names are kebab-case (`extensions/ollama.ts`). Function names use PascalCase for types, camelCase for functions.
+- **Config**: shared config loading/validation lives in `extensions/config.ts` (`loadProviderConfig()`), which is a helper module, not an extension entry. New provider settings go in the config file, never env vars. Invalid config values are dropped silently so extensions fall back to defaults. Relative imports use explicit `.ts` extensions (NodeNext + jiti; see `allowImportingTsExtensions` in tsconfig).
 - **Extension exports**: each extension uses both `export default` (for pi harness consumption) and a named export (e.g., `export { ollama }`) so the package is consumable as a library via the `exports` field in `package.json`.
 - **Error handling**: wrap `fetch` calls in `try/catch`, return `undefined` on failure. Extensions silently skip registration if the provider is unavailable.
-- **API key defaults**: use low-security placeholder values (`"ollama"`, `"lmstudio"`, `"omlx"`) — matching existing style.
-- **Model mapping**: always map provider model metadata to the pi `ProviderModel` interface with `reasoning: false` for Ollama, `reasoning: true` for LM Studio/OMLX (matching current code).
+- **API key defaults**: use low-security placeholder values (`"ollama"`, `"lmstudio"`, `"omlx"`, `"osaurus"`) — matching existing style. Base URL and context length defaults are per-provider constants in each extension.
+- **Model mapping**: always map provider model metadata to the pi `ProviderModel` interface with `reasoning: false` for Ollama/Osaurus, `reasoning: true` for LM Studio/OMLX (matching current code).
 - **Format/lint**: `npm run fmt`, `npm run fmt:check`, `npm run lint`, `npm run lint:fix`. No test command exists.
 - **Lint dependencies**: when upgrading `oxlint`, update `oxlint-tsgolint` to satisfy the version declared by `oxlint`'s optional peer dependency; mismatched versions cause npm `ERESOLVE` failures.
 - **Build**: `npm run build` (tsgo type-check only, no emit).
@@ -25,4 +31,4 @@ There are no tests — this is a small plugin. Focus on correctness, clean code,
 ## Safety
 
 - All providers use local endpoints — no external API calls beyond the local model server.
-- API keys from env vars are never logged or exposed to the model.
+- API keys from the config file are never logged or exposed to the model.
