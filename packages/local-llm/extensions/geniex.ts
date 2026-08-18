@@ -4,7 +4,7 @@ import { loadProviderConfig } from "./config.ts";
 
 const DEFAULT_BASE_URL = "http://127.0.0.1:18181";
 const DEFAULT_API_KEY = "geniex";
-const DEFAULT_CONTEXT_LENGTH = 131_072;
+const DEFAULT_CONTEXT_LENGTH = 65_536;
 const MAX_TOKENS_CEILING = 32_768;
 
 async function fetchGenieXModels(baseUrl: string, apiKey: string) {
