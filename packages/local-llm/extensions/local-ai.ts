@@ -17,6 +17,7 @@ const SUPPORTED_PROVIDERS: SupportedProvider[] = [
   { id: "osaurus", label: "Osaurus" },
   { id: "lmstudio", label: "LM Studio" },
   { id: "omlx", label: "OMLX" },
+  { id: "geniex", label: "GenieX" },
 ];
 
 /** One row in the /local-ai toggle list. */

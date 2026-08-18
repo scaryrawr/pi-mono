@@ -11,6 +11,7 @@
     "./extensions/ollama": "./extensions/ollama.ts",
     "./extensions/lmstudio": "./extensions/lmstudio.ts",
     "./extensions/omlx": "./extensions/omlx.ts",
+    "./extensions/geniex": "./extensions/geniex.ts",
     "./extensions/osaurus": "./extensions/osaurus.ts"
   },
   "scripts": {
@@ -34,7 +35,8 @@
       "extensions/ollama.ts",
       "extensions/osaurus.ts",
       "extensions/lmstudio.ts",
-      "extensions/omlx.ts"
+      "extensions/omlx.ts",
+      "extensions/geniex.ts"
     ]
   }
 }

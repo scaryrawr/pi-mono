@@ -21,6 +21,11 @@
       "enabled": false,
       "baseUrl": "http://localhost:8000",
       "apiKey": "omlx"
+    },
+    "geniex": {
+      "enabled": false,
+      "baseUrl": "http://127.0.0.1:18181",
+      "apiKey": "geniex"
     }
   }
 }
