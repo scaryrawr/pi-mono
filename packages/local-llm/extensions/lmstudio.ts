@@ -1,13 +1,34 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { Static } from "typebox";
+import { Type } from "typebox";
+import { Value } from "typebox/value";
 
 import { loadProviderConfig } from "./config.ts";
 
 const DEFAULT_BASE_URL = "http://localhost:1234";
+
 const DEFAULT_API_KEY = "lmstudio";
+
 const DEFAULT_CONTEXT_LENGTH = 131_072;
+
 const MAX_TOKENS_CEILING = 32_768;
 
-async function fetchLmStudioModels(baseUrl: string, apiKey: string) {
+const LmStudioModelsSchema = Type.Object({
+  models: Type.Array(
+    Type.Object({
+      key: Type.String(),
+      display_name: Type.Optional(Type.String()),
+      max_context_length: Type.Optional(Type.Number()),
+    }),
+  ),
+});
+
+type LmStudioModels = Static<typeof LmStudioModelsSchema>;
+
+async function fetchLmStudioModels(
+  baseUrl: string,
+  apiKey: string,
+): Promise<LmStudioModels | undefined> {
   try {
     const response = await fetch(`${baseUrl}/api/v1/models`, {
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -17,13 +38,9 @@ async function fetchLmStudioModels(baseUrl: string, apiKey: string) {
       return undefined;
     }
 
-    return (await response.json()) as {
-      models: Array<{
-        key: string;
-        display_name?: string;
-        max_context_length?: number;
-      }>;
-    };
+    const payload: unknown = await response.json();
+
+    return Value.Check(LmStudioModelsSchema, payload) ? payload : undefined;
   } catch {
     return undefined;
   }
@@ -31,12 +48,14 @@ async function fetchLmStudioModels(baseUrl: string, apiKey: string) {
 
 const lmstudio = async function (pi: ExtensionAPI) {
   const config = loadProviderConfig("lmstudio");
+
   if (config?.enabled !== true) return;
 
   const baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
   const apiKey = config.apiKey ?? DEFAULT_API_KEY;
 
   const payload = await fetchLmStudioModels(baseUrl, apiKey);
+
   if (payload === undefined) return;
 
   pi.registerProvider("lmstudio", {
@@ -45,6 +64,7 @@ const lmstudio = async function (pi: ExtensionAPI) {
     api: "openai-completions",
     models: payload.models.map((model) => {
       const contextLength = model.max_context_length ?? DEFAULT_CONTEXT_LENGTH;
+
       return {
         id: model.key,
         name: model.display_name ?? model.key,
@@ -59,4 +79,5 @@ const lmstudio = async function (pi: ExtensionAPI) {
 };
 
 export default lmstudio;
+
 export { lmstudio };

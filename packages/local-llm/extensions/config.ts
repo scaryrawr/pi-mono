@@ -2,6 +2,9 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import type { Static } from "typebox";
+import { Type } from "typebox";
+import { Value } from "typebox/value";
 
 /**
  * Validated per-provider settings from the shared pi-local-llm config file.
@@ -10,24 +13,29 @@ import { getAgentDir } from "@earendil-works/pi-coding-agent";
  * for anything the user did not set. A provider is only registered when
  * `enabled` is explicitly `true` (opt-in).
  */
-export interface ProviderConfig {
+const ProviderConfigSchema = Type.Object({
   /** Whether this provider's models should be registered. */
-  enabled?: boolean;
+  enabled: Type.Optional(Type.Boolean()),
   /** Base URL of the local provider server, e.g. "http://localhost:11434". */
-  baseUrl?: string;
+  baseUrl: Type.Optional(Type.String({ pattern: "\\S" })),
   /** Bearer token sent with requests to the provider. */
-  apiKey?: string;
+  apiKey: Type.Optional(Type.String({ minLength: 1 })),
   /** Context window size in tokens, used when the provider does not report one. */
-  contextLength?: number;
-}
+  contextLength: Type.Optional(Type.Number({ minimum: 1 })),
+});
+
+export type ProviderConfig = Static<typeof ProviderConfigSchema>;
 
 /**
- * Shape of the pi-local-llm config file. Provider entries are validated
- * lazily by `loadProviderConfig()` so unknown keys are ignored.
+ * Shape of the pi-local-llm config file. Unknown top-level keys and unknown
+ * per-provider fields are tolerated so round-trips do not drop user data;
+ * only `providers` entries are validated by `loadProviderConfig()`.
  */
-export interface LocalLlmConfig {
-  providers?: Record<string, unknown>;
-}
+const ConfigFileSchema = Type.Object({
+  providers: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
+});
+
+type ConfigFile = Static<typeof ConfigFileSchema>;
 
 /**
  * Absolute path of the shared config file in pi's agent directory
@@ -46,96 +54,14 @@ export function getLocalLlmConfigPath(): string {
  * A missing or malformed file is treated as "no providers configured" so pi
  * starts cleanly even before the user creates the file.
  */
-export function loadLocalLlmConfig(): LocalLlmConfig {
-  let raw: string;
+function readConfigFile(): ConfigFile {
   try {
-    raw = readFileSync(getLocalLlmConfigPath(), "utf8");
+    const parsed: unknown = JSON.parse(readFileSync(getLocalLlmConfigPath(), "utf8"));
+
+    return Value.Check(ConfigFileSchema, parsed) ? parsed : {};
   } catch {
     return {};
   }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return {};
-  }
-
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    return {};
-  }
-
-  const record = parsed as Record<string, unknown>;
-  if (
-    typeof record.providers !== "object" ||
-    record.providers === null ||
-    Array.isArray(record.providers)
-  ) {
-    return {};
-  }
-
-  return { providers: record.providers as Record<string, unknown> };
-}
-
-/**
- * Read the raw config object from the file.
- *
- * Returns `{}` when the file is missing or malformed. Unlike
- * `loadLocalLlmConfig()`, unknown keys are preserved so round-trips do not
- * drop user data.
- */
-export function readLocalLlmConfigRaw(): Record<string, unknown> {
-  let raw: string;
-  try {
-    raw = readFileSync(getLocalLlmConfigPath(), "utf8");
-  } catch {
-    return {};
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return {};
-  }
-
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    return {};
-  }
-
-  return parsed as Record<string, unknown>;
-}
-
-/**
- * Set a provider's `enabled` flag in the config file.
- *
- * Preserves all other existing fields (`baseUrl`, `apiKey`, `contextLength`,
- * unknown keys). Creates the file (and agent directory) when missing.
- */
-export function setProviderEnabled(name: string, enabled: boolean): void {
-  const config = readLocalLlmConfigRaw();
-
-  const providers = config.providers;
-  const providerRecord =
-    typeof providers === "object" && providers !== null && !Array.isArray(providers)
-      ? (providers as Record<string, unknown>)
-      : {};
-
-  const entry = providerRecord[name];
-  const entryRecord =
-    typeof entry === "object" && entry !== null && !Array.isArray(entry)
-      ? (entry as Record<string, unknown>)
-      : {};
-  entryRecord.enabled = enabled;
-  providerRecord[name] = entryRecord;
-
-  const path = getLocalLlmConfigPath();
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(
-    path,
-    `${JSON.stringify({ ...config, providers: providerRecord }, null, 2)}\n`,
-    "utf8",
-  );
 }
 
 /**
@@ -146,33 +72,28 @@ export function setProviderEnabled(name: string, enabled: boolean): void {
  * silently so extensions fall back to their defaults.
  */
 export function loadProviderConfig(name: string): ProviderConfig | undefined {
-  const entry = loadLocalLlmConfig().providers?.[name];
-  if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
-    return undefined;
-  }
+  const entry: unknown = readConfigFile().providers?.[name];
 
-  const record = entry as Record<string, unknown>;
-  const config: ProviderConfig = {};
+  return Value.Check(ProviderConfigSchema, entry) ? entry : undefined;
+}
 
-  if (typeof record.enabled === "boolean") {
-    config.enabled = record.enabled;
-  }
+/**
+ * Set a provider's `enabled` flag in the config file.
+ *
+ * Preserves all other existing fields (`baseUrl`, `apiKey`, `contextLength`,
+ * unknown keys). Creates the file (and agent directory) when missing.
+ */
+export function setProviderEnabled(name: string, enabled: boolean): void {
+  const config = readConfigFile();
 
-  if (typeof record.baseUrl === "string" && record.baseUrl.trim().length > 0) {
-    config.baseUrl = record.baseUrl;
-  }
+  const providers = config.providers ?? {};
 
-  if (typeof record.apiKey === "string" && record.apiKey.length > 0) {
-    config.apiKey = record.apiKey;
-  }
+  const entry: unknown = providers[name];
 
-  if (
-    typeof record.contextLength === "number" &&
-    Number.isFinite(record.contextLength) &&
-    record.contextLength > 0
-  ) {
-    config.contextLength = Math.floor(record.contextLength);
-  }
+  providers[name] = Value.Check(ProviderConfigSchema, entry) ? { ...entry, enabled } : { enabled };
 
-  return config;
+  const path = getLocalLlmConfigPath();
+
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, `${JSON.stringify({ ...config, providers }, null, 2)}\n`, "utf8");
 }

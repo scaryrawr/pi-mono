@@ -1,13 +1,33 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { Static } from "typebox";
+import { Type } from "typebox";
+import { Value } from "typebox/value";
 
 import { loadProviderConfig } from "./config.ts";
 
 const DEFAULT_BASE_URL = "http://127.0.0.1:18181";
+
 const DEFAULT_API_KEY = "geniex";
+
 const DEFAULT_CONTEXT_LENGTH = 65_536;
+
 const MAX_TOKENS_CEILING = 32_768;
 
-async function fetchGenieXModels(baseUrl: string, apiKey: string) {
+const GenieXModelsSchema = Type.Object({
+  data: Type.Array(
+    Type.Object({
+      id: Type.String(),
+      context_length: Type.Optional(Type.Number()),
+    }),
+  ),
+});
+
+type GenieXModels = Static<typeof GenieXModelsSchema>;
+
+async function fetchGenieXModels(
+  baseUrl: string,
+  apiKey: string,
+): Promise<GenieXModels | undefined> {
   try {
     const response = await fetch(`${baseUrl}/v1/models`, {
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -17,12 +37,9 @@ async function fetchGenieXModels(baseUrl: string, apiKey: string) {
       return undefined;
     }
 
-    return (await response.json()) as {
-      data: Array<{
-        id: string;
-        context_length?: number;
-      }>;
-    };
+    const payload: unknown = await response.json();
+
+    return Value.Check(GenieXModelsSchema, payload) ? payload : undefined;
   } catch {
     return undefined;
   }
@@ -30,12 +47,14 @@ async function fetchGenieXModels(baseUrl: string, apiKey: string) {
 
 const geniex = async function (pi: ExtensionAPI) {
   const config = loadProviderConfig("geniex");
+
   if (config?.enabled !== true) return;
 
   const baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
   const apiKey = config.apiKey ?? DEFAULT_API_KEY;
 
   const payload = await fetchGenieXModels(baseUrl, apiKey);
+
   if (payload === undefined) return;
 
   pi.registerProvider("geniex", {
@@ -44,6 +63,7 @@ const geniex = async function (pi: ExtensionAPI) {
     api: "openai-completions",
     models: payload.data.map((model) => {
       const contextLength = model.context_length ?? config.contextLength ?? DEFAULT_CONTEXT_LENGTH;
+
       return {
         id: model.id,
         name: model.id,
@@ -58,4 +78,5 @@ const geniex = async function (pi: ExtensionAPI) {
 };
 
 export default geniex;
+
 export { geniex };

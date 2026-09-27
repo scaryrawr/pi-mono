@@ -77,18 +77,21 @@ class MultiSelect implements Component {
     }
 
     const lines = [this.theme.fg("accent", truncateToWidth("Local AI providers", width))];
+
     for (const [index, entry] of this.entries.entries()) {
       const prefix = index === this.cursor ? "> " : "  ";
       const state = entry.checked ? "☑" : "☐";
       const line = truncateToWidth(`${prefix}${state} ${entry.label}`, width);
       lines.push(index === this.cursor ? this.theme.fg("accent", line) : line);
     }
+
     lines.push(
       this.theme.fg("dim", truncateToWidth("space: toggle • enter: save • esc: cancel", width)),
     );
 
     this.cachedLines = lines;
     this.cachedWidth = width;
+
     return lines;
   }
 }
@@ -106,6 +109,7 @@ const localAi = async function (pi: ExtensionAPI) {
     handler: async (_args, ctx) => {
       if (ctx.mode !== "tui") {
         ctx.ui.notify("local-ai: requires interactive TUI mode", "warning");
+
         return;
       }
 
@@ -134,6 +138,7 @@ const localAi = async function (pi: ExtensionAPI) {
 
       if (result === null) {
         ctx.ui.notify("local-ai: cancelled, no changes saved", "info");
+
         return;
       }
 
@@ -154,4 +159,5 @@ const localAi = async function (pi: ExtensionAPI) {
 };
 
 export default localAi;
+
 export { localAi };

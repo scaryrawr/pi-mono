@@ -11,5 +11,6 @@
     "types": ["node"],
     "useUnknownInCatchVariables": true
   },
-  "include": ["./**/*.ts"]
+  "include": ["./**/*.ts"],
+  "exclude": ["tools"]
 }
