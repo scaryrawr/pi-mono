@@ -45,11 +45,11 @@ async function fetchOllamaModels(baseUrl: string, apiKey: string): Promise<Ollam
 const ollama = async function (pi: ExtensionAPI) {
   const config = loadProviderConfig("ollama");
 
-  if (config?.enabled !== true) return;
+  if (config?.enabled === false) return;
 
-  const baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
-  const apiKey = config.apiKey ?? DEFAULT_API_KEY;
-  const contextLength = config.contextLength ?? DEFAULT_CONTEXT_LENGTH;
+  const baseUrl = config?.baseUrl ?? DEFAULT_BASE_URL;
+  const apiKey = config?.apiKey ?? DEFAULT_API_KEY;
+  const contextLength = config?.contextLength ?? DEFAULT_CONTEXT_LENGTH;
   const maxTokens = Math.min(MAX_TOKENS_CEILING, Math.floor(contextLength / 4));
 
   const payload = await fetchOllamaModels(baseUrl, apiKey);

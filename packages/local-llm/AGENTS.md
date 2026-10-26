@@ -4,16 +4,16 @@
 
 Single-purpose pi coding agent plugin exposing five local AI providers (Ollama, LM Studio, OMLX, Osaurus, GenieX). Each provider extension in `extensions/` follows an identical pattern:
 
-1. Load the provider's opt-in settings from the shared config file via `extensions/config.ts`
-2. Return early (no registration) unless the provider is enabled in the config
+1. Load the provider's settings from the shared config file via `extensions/config.ts`
+2. Return early (no registration) only when the provider is explicitly disabled in the config
 3. Fetch available models from the provider's API
 4. Call `pi.registerProvider()` to register each model with the pi agent SDK
 
-`extensions/local-ai.ts` is the one non-provider extension: it registers the `/local-ai` command, an interactive multi-select list (up/down navigate, space toggle, enter save, esc cancel) for flipping each provider's `enabled` flag in the shared config via `setProviderEnabled()`. Toggles take effect at the next pi start, since providers register at startup.
+`extensions/local-ai.ts` is the one non-provider extension: it registers the `/local-ai` command, an interactive multi-select list (up/down navigate, space toggle, enter save, esc cancel) for opting out by disabling each provider's `enabled` flag in the shared config via `setProviderEnabled()`. Toggles take effect at the next pi start, since providers register at startup.
 
 ### Configuration
 
-All settings come from a single JSON config file at `<agentDir>/pi-local-llm.json` (default `~/.pi/agent/pi-local-llm.json`; pi's `getAgentDir()` honors the `PI_CODING_AGENT_DIR` override). There are no env vars for provider settings. Providers are **opt-in**: a provider registers models only when its `enabled` field is explicitly `true`. `pi-local-llm.example.json` shows the full schema. A missing or malformed config file is treated as "no providers configured", so pi always starts cleanly.
+All settings come from a single JSON config file at `<agentDir>/pi-local-llm.json` (default `~/.pi/agent/pi-local-llm.json`; pi's `getAgentDir()` honors the `PI_CODING_AGENT_DIR` override). There are no env vars for provider settings. Providers are **enabled by default**: a provider registers models unless its `enabled` field is explicitly `false` (opt-out). `pi-local-llm.example.json` shows the full schema. A missing or malformed config file is treated as defaults, so pi always starts cleanly.
 
 There are no tests — this is a small plugin. Focus on correctness, clean code, and matching existing patterns.
 

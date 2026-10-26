@@ -98,14 +98,15 @@ class MultiSelect implements Component {
 
 /**
  * Registers the /local-ai command, an interactive multi-select list for
- * toggling provider `enabled` flags in the shared pi-local-llm.json config.
+ * disabling provider `enabled` flags (opt-out) in the shared pi-local-llm.json
+ * config.
  *
  * Providers are registered at pi start, so toggles take effect after the next
  * pi start (noted to the user on save).
  */
 const localAi = async function (pi: ExtensionAPI) {
   pi.registerCommand("local-ai", {
-    description: "Toggle local AI providers on/off",
+    description: "Manage local AI providers",
     handler: async (_args, ctx) => {
       if (ctx.mode !== "tui") {
         ctx.ui.notify("local-ai: requires interactive TUI mode", "warning");
@@ -116,7 +117,7 @@ const localAi = async function (pi: ExtensionAPI) {
       const entries = SUPPORTED_PROVIDERS.map((provider) => ({
         id: provider.id,
         label: provider.label,
-        checked: loadProviderConfig(provider.id)?.enabled === true,
+        checked: loadProviderConfig(provider.id)?.enabled !== false,
       }));
 
       const result = await ctx.ui.custom<MultiSelectEntry[] | null>(
@@ -146,11 +147,11 @@ const localAi = async function (pi: ExtensionAPI) {
         setProviderEnabled(entry.id, entry.checked);
       }
 
-      const enabled = result.filter((entry) => entry.checked).map((entry) => entry.label);
+      const disabled = result.filter((entry) => !entry.checked).map((entry) => entry.label);
       ctx.ui.notify(
-        enabled.length > 0
-          ? `local-ai: enabled ${enabled.join(", ")}`
-          : "local-ai: all providers disabled",
+        disabled.length > 0
+          ? `local-ai: disabled ${disabled.join(", ")}`
+          : "local-ai: all providers enabled",
         "info",
       );
       ctx.ui.notify("local-ai: changes apply to providers registered at next pi start", "warning");

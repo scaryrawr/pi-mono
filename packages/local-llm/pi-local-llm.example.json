@@ -7,23 +7,23 @@
       "contextLength": 131072
     },
     "osaurus": {
-      "enabled": false,
+      "enabled": true,
       "baseUrl": "http://localhost:1337",
       "apiKey": "osaurus",
       "contextLength": 131072
     },
     "lmstudio": {
-      "enabled": false,
+      "enabled": true,
       "baseUrl": "http://localhost:1234",
       "apiKey": "lmstudio"
     },
     "omlx": {
-      "enabled": false,
+      "enabled": true,
       "baseUrl": "http://localhost:8000",
       "apiKey": "omlx"
     },
     "geniex": {
-      "enabled": false,
+      "enabled": true,
       "baseUrl": "http://127.0.0.1:18181",
       "apiKey": "geniex"
     }

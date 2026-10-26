@@ -49,10 +49,10 @@ async function fetchLmStudioModels(
 const lmstudio = async function (pi: ExtensionAPI) {
   const config = loadProviderConfig("lmstudio");
 
-  if (config?.enabled !== true) return;
+  if (config?.enabled === false) return;
 
-  const baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
-  const apiKey = config.apiKey ?? DEFAULT_API_KEY;
+  const baseUrl = config?.baseUrl ?? DEFAULT_BASE_URL;
+  const apiKey = config?.apiKey ?? DEFAULT_API_KEY;
 
   const payload = await fetchLmStudioModels(baseUrl, apiKey);
 

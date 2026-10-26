@@ -10,11 +10,11 @@ import { Value } from "typebox/value";
  * Validated per-provider settings from the shared pi-local-llm config file.
  *
  * All fields are optional; each extension applies provider-specific defaults
- * for anything the user did not set. A provider is only registered when
- * `enabled` is explicitly `true` (opt-in).
+ * for anything the user did not set. A provider is registered by default and
+ * only skipped when `enabled` is explicitly `false` (opt-out).
  */
 const ProviderConfigSchema = Type.Object({
-  /** Whether this provider's models should be registered. */
+  /** Whether this provider's models should be registered; defaults to enabled. */
   enabled: Type.Optional(Type.Boolean()),
   /** Base URL of the local provider server, e.g. "http://localhost:11434". */
   baseUrl: Type.Optional(Type.String({ pattern: "\\S" })),
@@ -25,6 +25,8 @@ const ProviderConfigSchema = Type.Object({
 });
 
 export type ProviderConfig = Static<typeof ProviderConfigSchema>;
+
+const ProviderEntrySchema = Type.Record(Type.String(), Type.Unknown());
 
 /**
  * Shape of the pi-local-llm config file. Unknown top-level keys and unknown
@@ -69,12 +71,28 @@ function readConfigFile(): ConfigFile {
  *
  * Returns `undefined` when the provider has no entry, or an object containing
  * only the fields present with correct types. Invalid values are dropped
- * silently so extensions fall back to their defaults.
+ * silently so extensions fall back to their defaults. An absent `enabled`
+ * field means the provider is enabled (opt-out).
  */
 export function loadProviderConfig(name: string): ProviderConfig | undefined {
   const entry: unknown = readConfigFile().providers?.[name];
 
-  return Value.Check(ProviderConfigSchema, entry) ? entry : undefined;
+  if (!Value.Check(ProviderEntrySchema, entry)) return undefined;
+
+  const config: ProviderConfig = {};
+  const fields = Type.Required(ProviderConfigSchema).properties;
+
+  if (Value.Check(fields.enabled, entry.enabled)) config.enabled = entry.enabled;
+
+  if (Value.Check(fields.baseUrl, entry.baseUrl)) config.baseUrl = entry.baseUrl;
+
+  if (Value.Check(fields.apiKey, entry.apiKey)) config.apiKey = entry.apiKey;
+
+  if (Value.Check(fields.contextLength, entry.contextLength)) {
+    config.contextLength = entry.contextLength;
+  }
+
+  return config;
 }
 
 /**
@@ -90,7 +108,7 @@ export function setProviderEnabled(name: string, enabled: boolean): void {
 
   const entry: unknown = providers[name];
 
-  providers[name] = Value.Check(ProviderConfigSchema, entry) ? { ...entry, enabled } : { enabled };
+  providers[name] = Value.Check(ProviderEntrySchema, entry) ? { ...entry, enabled } : { enabled };
 
   const path = getLocalLlmConfigPath();
 

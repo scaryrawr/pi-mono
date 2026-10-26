@@ -48,10 +48,10 @@ async function fetchGenieXModels(
 const geniex = async function (pi: ExtensionAPI) {
   const config = loadProviderConfig("geniex");
 
-  if (config?.enabled !== true) return;
+  if (config?.enabled === false) return;
 
-  const baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
-  const apiKey = config.apiKey ?? DEFAULT_API_KEY;
+  const baseUrl = config?.baseUrl ?? DEFAULT_BASE_URL;
+  const apiKey = config?.apiKey ?? DEFAULT_API_KEY;
 
   const payload = await fetchGenieXModels(baseUrl, apiKey);
 
@@ -62,7 +62,7 @@ const geniex = async function (pi: ExtensionAPI) {
     apiKey,
     api: "openai-completions",
     models: payload.data.map((model) => {
-      const contextLength = model.context_length ?? config.contextLength ?? DEFAULT_CONTEXT_LENGTH;
+      const contextLength = model.context_length ?? config?.contextLength ?? DEFAULT_CONTEXT_LENGTH;
 
       return {
         id: model.id,

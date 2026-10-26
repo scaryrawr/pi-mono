@@ -49,10 +49,10 @@ async function fetchOMLXModels(baseUrl: string, apiKey: string): Promise<OmlxMod
 const omlx = async function (pi: ExtensionAPI) {
   const config = loadProviderConfig("omlx");
 
-  if (config?.enabled !== true) return;
+  if (config?.enabled === false) return;
 
-  const baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
-  const apiKey = config.apiKey ?? DEFAULT_API_KEY;
+  const baseUrl = config?.baseUrl ?? DEFAULT_BASE_URL;
+  const apiKey = config?.apiKey ?? DEFAULT_API_KEY;
 
   const payload = await fetchOMLXModels(baseUrl, apiKey);
 
