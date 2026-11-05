@@ -72,8 +72,8 @@ Workspace tests include agent-plugins' local integration tests but exclude MXC's
 native integration and RPC suites. Local-llm has no test script, and webfetch
 currently has no tests. MXC's additional suites require host prerequisites;
 see its [development instructions](packages/sandbox/README.md#develop-and-verify).
-Package-local TypeScript and formatter configurations and runtime entry points
-remain separate.
+Git ignore rules, formatter settings, and lint rules live at the repository root.
+Package-local TypeScript configurations and runtime entry points remain separate.
 
 ## Shared lint tooling
 

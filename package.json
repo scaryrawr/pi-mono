@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "pnpm -r run build",
-    "fmt": "oxfmt package.json pnpm-workspace.yaml .oxlintrc.json tsconfig.json README.md tools/oxlint/anti-slop.test.ts tools/oxlint/anti-slop/UPSTREAM.md && pnpm -r run fmt",
-    "fmt:check": "oxfmt --check package.json pnpm-workspace.yaml .oxlintrc.json tsconfig.json README.md tools/oxlint/anti-slop.test.ts tools/oxlint/anti-slop/UPSTREAM.md && pnpm -r run fmt:check",
+    "fmt": "oxfmt package.json pnpm-workspace.yaml .oxfmtrc.json .oxlintrc.json tsconfig.json README.md tools/oxlint/anti-slop.test.ts tools/oxlint/anti-slop/UPSTREAM.md && pnpm -r run fmt",
+    "fmt:check": "oxfmt --check package.json pnpm-workspace.yaml .oxfmtrc.json .oxlintrc.json tsconfig.json README.md tools/oxlint/anti-slop.test.ts tools/oxlint/anti-slop/UPSTREAM.md && pnpm -r run fmt:check",
     "lint": "oxlint packages tools/oxlint",
     "lint:fix": "oxlint --fix packages tools/oxlint",
     "test": "pnpm test:lint && pnpm -r --if-present run test:run",

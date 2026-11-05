@@ -28,6 +28,6 @@ Copilot and webfetch's `pnpm test` watch; use `test:run` for one-shot execution.
 
 Keep dependency versions in the named catalogs in `pnpm-workspace.yaml`; preserve host peer compatibility ranges independently of development pins. Use pnpm for packing/publishing so `catalog:` references resolve.
 
-The root owns `.oxlintrc.json` and Oxlint dependencies. Keep `oxlint` and `oxlint-tsgolint` peer-compatible; do not add package-local copies or weaken rules for unparsed input. Module mocks and conditional empty-object spreads are rejected; validate external data at its boundary.
+The root owns `.gitignore`, `.oxfmtrc.json`, `.oxlintrc.json`, and Oxlint dependencies. Keep `oxlint` and `oxlint-tsgolint` peer-compatible; do not add package-local copies or weaken rules for unparsed input. Module mocks and conditional empty-object spreads are rejected; validate external data at its boundary.
 
 Relative TypeScript imports use `.js`, except local-llm's explicit `.ts` imports. Keep vendored `tools/oxlint/anti-slop/` source upstream-identical; follow its `UPSTREAM.md` and preserve provenance/licenses rather than applying formatter or autofix churn.

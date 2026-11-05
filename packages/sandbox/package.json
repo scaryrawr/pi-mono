@@ -18,8 +18,8 @@
   "type": "module",
   "scripts": {
     "build": "tsrs -p ./tsconfig.json",
-    "fmt": "oxfmt --ignore-path .gitignore ./extensions/*.ts ./tests/*.ts *.json *.md docs/*.md .oxfmtrc.json",
-    "fmt:check": "oxfmt --check --ignore-path .gitignore ./extensions/*.ts ./tests/*.ts *.json *.md docs/*.md .oxfmtrc.json",
+    "fmt": "oxfmt ./extensions/*.ts ./tests/*.ts *.json *.md docs/*.md",
+    "fmt:check": "oxfmt --check ./extensions/*.ts ./tests/*.ts *.json *.md docs/*.md",
     "lint": "oxlint -c ../../.oxlintrc.json --tsconfig ./tsconfig.json ./extensions/*.ts ./tests/*.ts",
     "lint:fix": "oxlint -c ../../.oxlintrc.json --fix --tsconfig ./tsconfig.json ./extensions/*.ts ./tests/*.ts",
     "test": "vitest run --exclude '**/*.integration.test.ts'",
