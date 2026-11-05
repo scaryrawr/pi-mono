@@ -183,10 +183,10 @@ Install dependencies from the monorepo root, then run package commands:
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm --filter pi-agent-plugins build
-pnpm --filter pi-agent-plugins lint
-pnpm --filter pi-agent-plugins test
-pnpm --filter pi-agent-plugins fmt:check
+pnpm --filter @scaryrawr/pi-agent-plugins build
+pnpm --filter @scaryrawr/pi-agent-plugins lint
+pnpm --filter @scaryrawr/pi-agent-plugins test
+pnpm --filter @scaryrawr/pi-agent-plugins fmt:check
 ```
 
 `pnpm install` requires access to the configured npm registry. There are no Git dependencies or bundled MCP transports. Shared versions live in the workspace catalog. See the [monorepo development guide](../../README.md#development).

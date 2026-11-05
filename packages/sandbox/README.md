@@ -108,15 +108,15 @@ From the monorepo root:
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm --filter pi-mxc check
-pnpm --filter pi-mxc test:integration
-pnpm --filter pi-mxc test:rpc
+pnpm --filter @scaryrawr/pi-mxc check
+pnpm --filter @scaryrawr/pi-mxc test:integration
+pnpm --filter @scaryrawr/pi-mxc test:rpc
 ```
 
 `check` runs TypeScript native preview, the monorepo root's shared type-aware Oxlint and Anti-Slop rules, Oxfmt, and unit tests. `test:integration` runs MXC workloads and requires a usable native backend. Missing prerequisites fail the run rather than skip tests. The live tests use Unix bash and `/usr/bin/curl`, so run them on macOS or Linux.
 
 The integration suite checks host Node execution, linked tool runtimes and read-only enforcement, a local Git workflow, host Git identity, read-only global config, private temporary storage, allowed and denied filesystem operations, symlink containment, environment isolation, loopback networking, shell quoting, exit status, timeout, and cancellation. It does not certify every backend or policy combination.
 
-`test:rpc` requires Python 3 and an installed `pi` command. It starts an isolated pi instance with a temporary agent directory, runs `/sandbox` commands, and uses the JSON editor. It checks config files, session-switch cleanup, and native user-bash execution without making model calls. Inside an existing sandbox, use `pnpm --filter pi-mxc test:rpc --commands-only` to verify policy commands without launching nested native sandboxes.
+`test:rpc` requires Python 3 and an installed `pi` command. It starts an isolated pi instance with a temporary agent directory, runs `/sandbox` commands, and uses the JSON editor. It checks config files, session-switch cleanup, and native user-bash execution without making model calls. Inside an existing sandbox, use `pnpm --filter @scaryrawr/pi-mxc test:rpc --commands-only` to verify policy commands without launching nested native sandboxes.
 
 [Design notes](docs/design.md) explain the integration boundaries and follow-up work.

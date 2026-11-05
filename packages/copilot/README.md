@@ -15,7 +15,7 @@ pi install git:github.com/scaryrawr/pi-copilot
 ## Development
 
 Install dependencies with `pnpm install --frozen-lockfile` from the monorepo root.
-Run the following from this package directory, or use `pnpm --filter pi-copilot <script>` from the root:
+Run the following from this package directory, or use `pnpm --filter @scaryrawr/pi-copilot <script>` from the root:
 
 | Task        | Command         |
 | ----------- | --------------- |

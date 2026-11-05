@@ -1,5 +1,5 @@
 {
-  "name": "pi-mxc",
+  "name": "@scaryrawr/pi-mxc",
   "version": "0.1.0",
   "description": "MXC-backed bash sandboxing for pi",
   "keywords": [

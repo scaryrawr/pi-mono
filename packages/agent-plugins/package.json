@@ -1,5 +1,5 @@
 {
-  "name": "pi-agent-plugins",
+  "name": "@scaryrawr/pi-agent-plugins",
   "version": "0.1.0",
   "description": "Agent Plugins package loader for pi",
   "keywords": [

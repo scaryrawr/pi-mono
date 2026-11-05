@@ -1,5 +1,5 @@
 {
-  "name": "pi-mono",
+  "name": "@scaryrawr/pi-mono",
   "version": "0.0.0",
   "private": true,
   "description": "pi monorepo — workspace root",
