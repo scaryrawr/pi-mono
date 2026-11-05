@@ -9,6 +9,7 @@ import { afterEach, it } from "vitest";
 import { configuredSources, readConfig } from "./config.js";
 
 const dirs: string[] = [];
+
 afterEach(async () => {
   for (const dir of dirs.splice(0)) await rm(dir, { recursive: true, force: true });
 });

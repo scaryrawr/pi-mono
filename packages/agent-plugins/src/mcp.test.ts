@@ -11,7 +11,9 @@ import { loadPlugin } from "./plugin.js";
 const roots: string[] = [];
 const schema = "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json";
 
-async function fixture(servers: Record<string, unknown>, name = "tools.demo") {
+type McpFixture = string | number | boolean | null | McpFixture[] | { [key: string]: McpFixture };
+
+async function fixture(servers: Record<string, McpFixture>, name = "tools.demo") {
   const directory = await mkdtemp(path.join(tmpdir(), "agent-plugin-mcp-"));
   roots.push(directory);
   const root = path.join(directory, "plugin");
@@ -26,12 +28,15 @@ async function fixture(servers: Record<string, unknown>, name = "tools.demo") {
   const plugin = await loadPlugin(root);
   const registrations = new Map<string, McpServerConfig>();
   const warnings: string[] = [];
+
   const pi = {
     registerMcpServer: (key: string, config: McpServerConfig) => {
       registrations.set(key, config);
     },
   };
+
   const register = () => registerPluginMcp(pi, plugin, data, (message) => warnings.push(message));
+
   return { root, data, directory, plugin, pi, registrations, warnings, register };
 }
 
@@ -58,6 +63,7 @@ describe("portable MCP adapter for Pi's built-in support", () => {
       reserved: { type: "stdio", command: "node", env: { PLUGIN_ROOT: "bad" } },
       legacy: { type: "sse", url: "https://example.org/sse" },
     });
+
     await writeFile(path.join(f.root, "server.js"), "");
     await mkdir(path.join(f.data, "work"), { recursive: true });
     const names = await f.register();
@@ -96,6 +102,7 @@ describe("portable MCP adapter for Pi's built-in support", () => {
       "a.b": { type: "stdio", command: "node" },
       a_b: { type: "stdio", command: "node" },
     };
+
     const first = await fixture(servers);
     const second = await fixture(servers);
     const names = [...(await first.register()), ...(await second.register())];
@@ -118,6 +125,7 @@ describe("portable MCP adapter for Pi's built-in support", () => {
       valid: { type: "stdio", command: "node" },
       loopback: { type: "streamable-http", url: "http://127.0.0.1:9876/mcp" },
     });
+
     await writeFile(path.join(f.directory, "outside"), "");
     await symlink(path.join(f.directory, "outside"), path.join(f.root, "outside"));
     expect(await f.register()).toHaveLength(2);
@@ -152,7 +160,9 @@ describe("portable MCP adapter for Pi's built-in support", () => {
       first: { type: "stdio", command: "node" },
       second: { type: "stdio", command: "node" },
     });
+
     let calls = 0;
+
     const names = await registerPluginMcp(
       {
         registerMcpServer: (name, config) => {
@@ -164,6 +174,7 @@ describe("portable MCP adapter for Pi's built-in support", () => {
       f.data,
       (message) => f.warnings.push(message),
     );
+
     expect(names).toHaveLength(1);
     expect(f.warnings).toHaveLength(1);
   });

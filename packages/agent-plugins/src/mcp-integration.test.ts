@@ -10,6 +10,8 @@ import {
   SessionManager,
   SettingsManager,
 } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
+import { Compile } from "typebox/compile";
 import { expect, it } from "vitest";
 
 import agentPlugins from "./index.js";
@@ -19,6 +21,7 @@ it("connects portable servers through native MCP, discovers and calls their tool
   const previous = process.env.PI_CODING_AGENT_DIR;
   process.env.PI_CODING_AGENT_DIR = directory;
   let cleanup: (() => Promise<void>) | undefined;
+
   try {
     const root = path.join(directory, "plugin");
     await mkdir(root);
@@ -59,6 +62,7 @@ readline.createInterface({ input: process.stdin }).on('line', (line) => {
       JSON.stringify({ plugins: [root] }),
     );
     const settingsManager = SettingsManager.inMemory({ defaultTools: ["+tool_search"] });
+
     const resourceLoader = new DefaultResourceLoader({
       cwd: directory,
       agentDir: directory,
@@ -69,8 +73,10 @@ readline.createInterface({ input: process.stdin }).on('line', (line) => {
       noContextFiles: true,
       extensionFactories: [createToolSearchExtension(), createMcpExtension(), agentPlugins],
     });
+
     await resourceLoader.reload();
     expect(resourceLoader.getExtensions().errors).toEqual([]);
+
     const { session } = await createAgentSession({
       cwd: directory,
       agentDir: directory,
@@ -78,37 +84,49 @@ readline.createInterface({ input: process.stdin }).on('line', (line) => {
       settingsManager,
       sessionManager: SessionManager.inMemory(directory),
     });
+
     cleanup = async () => {
       await session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" });
       session.dispose();
     };
+
     const errors: unknown[] = [];
     await session.bindExtensions({ onError: (error) => errors.push(error) });
     let nativeName: string | undefined;
+
     for (let attempt = 0; attempt < 100; attempt++) {
       nativeName = session.getAllTools().find((tool) => tool.name.endsWith("__where"))?.name;
+
       if (nativeName) break;
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
+
     expect(errors).toEqual([]);
     expect(nativeName).toBeDefined();
     expect(session.getActiveToolNames()).not.toContain(nativeName);
     expect(session.getActiveToolNames()).not.toContain("search_tools");
     const search = session.agent.state.tools.find((tool) => tool.name === "tool_search");
+
     if (!search) throw new Error("Missing native tool_search");
     await search.execute("search", { query: "native fixture environment" });
     expect(session.getActiveToolNames()).toContain(nativeName);
     const tool = session.agent.state.tools.find((item) => item.name === nativeName);
+
     if (!tool) throw new Error("Missing loaded MCP tool");
     const result = await tool.execute("call", {});
     const content = result.content.find((block) => block.type === "text");
+
     if (!content || content.type !== "text") throw new Error("Missing MCP text result");
-    const values = JSON.parse(content.text) as {
-      cwd: string;
-      root: string;
-      data: string;
-      literal: string;
-    };
+
+    const values = Compile(
+      Type.Object({
+        cwd: Type.String(),
+        root: Type.String(),
+        data: Type.String(),
+        literal: Type.String(),
+      }),
+    ).Parse(JSON.parse(content.text));
+
     expect(values.root).toBe(await realpath(root));
     expect(values.cwd).toBe(values.data);
     expect(values.data).toContain("plugin-data");
@@ -122,6 +140,7 @@ readline.createInterface({ input: process.stdin }).on('line', (line) => {
     expect(session.getAllTools().find((item) => item.name === nativeName)?.exposure).toBe("hidden");
   } finally {
     await cleanup?.();
+
     if (previous === undefined) delete process.env.PI_CODING_AGENT_DIR;
     else process.env.PI_CODING_AGENT_DIR = previous;
     await rm(directory, { recursive: true, force: true });

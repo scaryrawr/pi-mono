@@ -8,13 +8,23 @@ import { afterEach, it } from "vitest";
 import { loadPlugin } from "./plugin.js";
 
 const roots: string[] = [];
+
+type ManifestFixture =
+  | string
+  | number
+  | boolean
+  | null
+  | ManifestFixture[]
+  | { [key: string]: ManifestFixture };
+
 afterEach(async () => {
   const { rm } = await import("node:fs/promises");
+
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
 });
 
 async function fixture(
-  manifest: object = {
+  manifest: ManifestFixture = {
     $schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
     name: "example",
   },
@@ -22,11 +32,13 @@ async function fixture(
   const root = await mkdtemp(path.join(tmpdir(), "pi-agent-plugins-"));
   roots.push(root);
   await writeFile(path.join(root, "plugin.json"), JSON.stringify(manifest));
+
   return root;
 }
 
 it("discovers only direct valid skills and pi-specific prompts", async () => {
   const root = await fixture();
+
   for (const name of ["good", "bad", "nested/deep"])
     await mkdir(path.join(root, "skills", name), { recursive: true });
   await writeFile(
@@ -121,9 +133,32 @@ it("ignores unknown manifest fields and malformed extensions", async () => {
     extra: true,
     extensions: 1,
   });
+
   const warnings: string[] = [];
   assert.equal((await loadPlugin(root, (message) => warnings.push(message))).name, "example");
   assert.equal(warnings.length, 2);
+});
+
+it("preserves UTF-16 skill limits and validates every metadata key", async () => {
+  const root = await fixture();
+
+  for (const [name, fields] of [
+    ["valid", `description: "${"😀".repeat(512)}"`],
+    ["description", `description: "${"😀".repeat(513)}"`],
+    ["compatibility", `description: Valid\ncompatibility: "${"😀".repeat(251)}"`],
+    ["metadata", 'description: Valid\nmetadata:\n  "line\\nbreak": 1'],
+  ] satisfies [string, string][]) {
+    await mkdir(path.join(root, "skills", name), { recursive: true });
+    await writeFile(
+      path.join(root, "skills", name, "SKILL.md"),
+      `---\nname: ${name}\n${fields}\n---\n`,
+    );
+  }
+
+  const warnings: string[] = [];
+  const result = await loadPlugin(root, (message) => warnings.push(message));
+  assert.deepEqual(result.skillPaths, [path.join(await realpath(root), "skills/valid/SKILL.md")]);
+  assert.equal(warnings.length, 3);
 });
 
 it("rejects an escaping manifest and isolates escaping skill and prompt entries", async () => {

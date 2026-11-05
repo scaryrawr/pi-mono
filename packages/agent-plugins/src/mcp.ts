@@ -20,6 +20,9 @@ const mcpSchema = Compile(
     { additionalProperties: false },
   ),
 );
+
+const missingFileSchema = Compile(Type.Object({ code: Type.Literal("ENOENT") }));
+
 const stdioSchema = Compile(
   Type.Object(
     {
@@ -32,6 +35,7 @@ const stdioSchema = Compile(
     { additionalProperties: false },
   ),
 );
+
 const httpSchema = Compile(
   Type.Object(
     {
@@ -45,6 +49,7 @@ const httpSchema = Compile(
 
 function within(root: string, target: string): boolean {
   const relative = path.relative(root, target);
+
   return (
     relative === "" ||
     (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative))
@@ -54,8 +59,10 @@ function within(root: string, target: string): boolean {
 async function checked(root: string, target: string, kind: "file" | "directory"): Promise<string> {
   const resolved = await realpath(target);
   const info = await stat(resolved);
+
   if (!within(root, resolved) || !(kind === "file" ? info.isFile() : info.isDirectory()))
     throw new Error(`Invalid plugin ${kind} path: ${target}`);
+
   return resolved;
 }
 
@@ -69,6 +76,7 @@ function expand(value: string, root: string, data: string): string {
 // Escape Pi's environment/command syntax so migration does not add shell execution.
 function literal(value: string): string {
   const escaped = value.replace(/\$/g, "$$$$");
+
   return escaped.startsWith("!") ? `$${escaped}` : escaped;
 }
 
@@ -76,6 +84,7 @@ function serverName(plugin: PluginResources, name: string): string {
   const identity = createHash("sha256").update(plugin.root).digest("hex").slice(0, 12);
   const safe = name.replace(/[^a-zA-Z0-9_-]/g, "_") || "server";
   const suffix = `_${createHash("sha256").update(name).digest("hex").slice(0, 12)}`;
+
   return `${plugin.name.replace(/\./g, "_")}_${identity}_${safe}${suffix}`;
 }
 
@@ -94,6 +103,7 @@ async function stdioConfig(
     throw new Error("Reserved environment variable");
 
   let command = entry.command;
+
   if (command.startsWith("./")) command = await checked(root, path.join(root, command), "file");
   else if (
     command.includes("/") ||
@@ -106,9 +116,11 @@ async function stdioConfig(
 
   await mkdir(dataPath, { recursive: true });
   const data = await realpath(dataPath);
+
   if (!(await stat(data)).isDirectory()) throw new Error("PLUGIN_DATA must be a directory");
   await access(data, constants.W_OK);
   let cwd = root;
+
   if (entry.cwd !== undefined) {
     if (entry.cwd.startsWith("./"))
       cwd = await checked(root, path.resolve(root, entry.cwd), "directory");
@@ -118,12 +130,15 @@ async function stdioConfig(
       cwd = await checked(data, expand(entry.cwd, root, data), "directory");
     else throw new Error("Invalid working directory form");
   }
+
   const env: Record<string, string> = {};
+
   for (const [key, value] of Object.entries(entry.env ?? {}))
     env[key] = literal(expand(value, root, data));
   // Pi inherits process.env; do not snapshot or re-interpolate the host environment.
   env.PLUGIN_ROOT = literal(root);
   env.PLUGIN_DATA = literal(data);
+
   return {
     type: "stdio",
     command,
@@ -137,8 +152,10 @@ async function stdioConfig(
 function httpConfig(entry: ReturnType<typeof httpSchema.Parse>): McpServerConfig {
   const url = new URL(entry.url);
   const host = url.hostname.replace(/^\[|\]$/g, "");
+
   const loopback =
     host === "localhost" || (isIP(host) === 4 && host.startsWith("127.")) || host === "::1";
+
   if (
     (url.protocol !== "https:" && !(url.protocol === "http:" && loopback)) ||
     url.username ||
@@ -149,13 +166,16 @@ function httpConfig(entry: ReturnType<typeof httpSchema.Parse>): McpServerConfig
     throw new Error("Invalid remote server URL");
   const names = new Set<string>();
   const headers: Record<string, string> = {};
+
   for (const [name, value] of Object.entries(entry.headers ?? {})) {
     validateHeaderName(name);
     validateHeaderValue(name, value);
+
     if (names.has(name.toLowerCase())) throw new Error("Duplicate header name");
     names.add(name.toLowerCase());
     headers[name] = literal(value);
   }
+
   return { type: "http", url: entry.url, headers, exposure: "deferred" };
 }
 
@@ -168,19 +188,24 @@ export async function registerPluginMcp(
 ): Promise<string[]> {
   const registered: string[] = [];
   let config: unknown;
+
   try {
     const file = await checked(plugin.root, path.join(plugin.root, "mcp.json"), "file");
     config = JSON.parse(await readFile(file, "utf8"));
+
     if (!mcpSchema.Check(config)) throw new Error("Invalid or unsupported mcp.json");
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT")
-      warn(`Ignoring MCP for ${plugin.name}: ${String(error)}`);
+    if (!missingFileSchema.Check(error)) warn(`Ignoring MCP for ${plugin.name}: ${String(error)}`);
+
     return registered;
   }
+
   const parsed = mcpSchema.Parse(config);
+
   for (const [name, value] of Object.entries(parsed.mcpServers)) {
     try {
       let entry: McpServerConfig;
+
       if (stdioSchema.Check(value))
         entry = await stdioConfig(stdioSchema.Parse(value), plugin.root, dataPath);
       else if (httpSchema.Check(value)) entry = httpConfig(httpSchema.Parse(value));
@@ -192,5 +217,6 @@ export async function registerPluginMcp(
       warn(`Skipping plugin MCP server ${plugin.name}/${name}: ${String(error)}`);
     }
   }
+
   return registered;
 }

@@ -5,10 +5,37 @@ import * as path from "node:path";
 import { promisify } from "node:util";
 
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import { Type } from "typebox";
+import { Compile } from "typebox/compile";
 
 const exec = promisify(execFile);
 const github = /^https:\/\/github\.com\/([a-zA-Z0-9-]+)\/([a-zA-Z0-9._-]+?)(?:\.git)?\/?$/;
 const pluginName = /^[a-z0-9](?:(?!.*(?:--|\.\.))[a-z0-9.-]{0,62}[a-z0-9])?$/;
+const missingFileSchema = Compile(Type.Object({ code: Type.Literal("ENOENT") }));
+
+const marketplaceSchema = Compile(
+  Type.Object({ name: Type.String(), plugins: Type.Array(Type.Unknown()) }),
+);
+
+const marketplaceDocumentSchema = Compile(
+  Type.Object({ name: Type.Optional(Type.Unknown()), plugins: Type.Optional(Type.Unknown()) }),
+);
+
+const entrySchema = Compile(
+  Type.Object({
+    name: Type.Optional(Type.Unknown()),
+    source: Type.Optional(Type.Unknown()),
+    description: Type.Optional(Type.Unknown()),
+  }),
+);
+
+const pluginNameSchema = Compile(Type.String({ pattern: pluginName.source }));
+
+const localSourceSchema = Compile(
+  Type.Union([Type.String(), Type.Object({ source: Type.Literal("local"), path: Type.String() })]),
+);
+
+const descriptionSchema = Compile(Type.String());
 
 export interface MarketplaceEntry {
   source: string;
@@ -29,30 +56,39 @@ export interface Catalog {
 export function normalizeSource(input: string, base = process.cwd()): string {
   const source = input.trim();
   const match = github.exec(source);
+
   if (match) return `https://github.com/${match[1]}/${match[2]}`;
+
   if (source.startsWith("https://") || source.startsWith("http://") || source.startsWith("git:"))
     throw new Error("Only https://github.com/owner/repo URLs or local directories are supported");
+
   if (!source) throw new Error("Marketplace source is empty");
+
   return path.resolve(base, source);
 }
 
 export function marketplaceRoot(source: string): string {
   if (!github.test(source)) return source;
   const id = createHash("sha256").update(source).digest("hex");
+
   return path.join(getAgentDir(), "marketplaces", id);
 }
 
 export async function installMarketplace(source: string): Promise<void> {
   if (!github.test(source)) return;
   const root = marketplaceRoot(source);
+
   try {
     await stat(root);
+
     return;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    if (!missingFileSchema.Check(error)) throw error;
   }
+
   await mkdir(path.dirname(root), { recursive: true });
   const temporary = `${root}-${process.pid}-${Date.now()}`;
+
   try {
     await exec("git", ["clone", "--depth", "1", "--", source, temporary], {
       timeout: 120_000,
@@ -77,6 +113,7 @@ export async function refreshMarketplace(source: string): Promise<void> {
 
 function within(root: string, target: string): boolean {
   const relative = path.relative(root, target);
+
   return (
     relative === "" ||
     (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative))
@@ -88,66 +125,74 @@ export async function readMarketplace(
   warn: (message: string) => void = console.warn,
 ): Promise<Catalog> {
   const root = await realpath(marketplaceRoot(source));
+
   if (!(await stat(root)).isDirectory()) throw new Error("Marketplace root must be a directory");
   let manifest: string | undefined;
+
   for (const location of [".github/plugin/marketplace.json", ".agents/plugins/marketplace.json"]) {
     const candidate = path.join(root, location);
+
     try {
       await lstat(candidate);
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
+      if (missingFileSchema.Check(error)) continue;
       throw error;
     }
+
     manifest = await realpath(candidate);
     break;
   }
+
   if (!manifest)
     throw new Error(
       "Missing marketplace manifest (.github/plugin/marketplace.json or .agents/plugins/marketplace.json)",
     );
+
   if (!within(root, manifest) || !(await stat(manifest)).isFile())
     throw new Error("Marketplace manifest must be a file inside the marketplace root");
   const data: unknown = JSON.parse(await readFile(manifest, "utf8"));
-  if (!data || typeof data !== "object" || Array.isArray(data))
-    throw new Error("Invalid marketplace");
-  const catalog = data as Record<string, unknown>;
-  if (typeof catalog.name !== "string" || !Array.isArray(catalog.plugins))
-    throw new Error("Marketplace needs a name and plugins array");
+
+  if (!marketplaceDocumentSchema.Check(data)) throw new Error("Invalid marketplace");
+
+  if (!marketplaceSchema.Check(data)) throw new Error("Marketplace needs a name and plugins array");
   const plugins: CatalogPlugin[] = [];
   const names = new Set<string>();
-  for (const value of catalog.plugins) {
-    if (!value || typeof value !== "object" || Array.isArray(value)) {
+
+  for (const entry of data.plugins) {
+    if (!entrySchema.Check(entry)) {
       warn("Skipping invalid marketplace entry");
       continue;
     }
-    const entry = value as Record<string, unknown>;
+
     try {
-      if (typeof entry.name !== "string" || !pluginName.test(entry.name) || names.has(entry.name))
+      if (!pluginNameSchema.Check(entry.name) || names.has(entry.name))
         throw new Error("invalid or duplicate name");
       const source = entry.source;
-      const localPath =
-        typeof source === "string"
-          ? source
-          : source &&
-              typeof source === "object" &&
-              !Array.isArray(source) &&
-              (source as Record<string, unknown>).source === "local"
-            ? (source as Record<string, unknown>).path
-            : undefined;
-      if (typeof localPath !== "string" || !localPath.startsWith("./"))
+
+      if (!localSourceSchema.Check(source))
+        throw new Error("only local ./ plugin sources are supported");
+
+      const localPath = descriptionSchema.Check(source) ? source : source.path;
+
+      if (!localPath.startsWith("./"))
         throw new Error("only local ./ plugin sources are supported");
       const location = await realpath(path.resolve(root, localPath));
+
       if (!within(root, location) || !(await stat(location)).isDirectory())
         throw new Error("plugin source must be a directory inside the marketplace");
       names.add(entry.name);
-      plugins.push({
+
+      const plugin: CatalogPlugin = {
         name: entry.name,
-        ...(typeof entry.description === "string" ? { description: entry.description } : {}),
         root: location,
-      });
+      };
+
+      if (descriptionSchema.Check(entry.description)) plugin.description = entry.description;
+      plugins.push(plugin);
     } catch (error) {
       warn(`Skipping marketplace plugin ${String(entry.name)}: ${String(error)}`);
     }
   }
-  return { name: catalog.name, plugins };
+
+  return { name: data.name, plugins };
 }

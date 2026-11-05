@@ -8,6 +8,7 @@ import { afterEach, it } from "vitest";
 import { normalizeSource, readMarketplace } from "./marketplace.js";
 
 const dirs: string[] = [];
+
 afterEach(async () => {
   for (const dir of dirs.splice(0)) await rm(dir, { recursive: true, force: true });
 });
@@ -16,6 +17,7 @@ async function fixture(): Promise<string> {
   const root = await mkdtemp(path.join(tmpdir(), "pi-marketplace-"));
   dirs.push(root);
   await mkdir(path.join(root, ".github/plugin"), { recursive: true });
+
   return root;
 }
 
@@ -25,6 +27,7 @@ it("accepts local directories and normalized GitHub repositories, not other remo
     normalizeSource("https://github.com/owner/repo.git"),
     "https://github.com/owner/repo",
   );
+
   for (const source of [
     "https://evil.test/repo",
     "https://github.com/owner/repo/tree/main",

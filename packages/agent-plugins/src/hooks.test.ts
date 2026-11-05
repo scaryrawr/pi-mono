@@ -2,7 +2,12 @@ import { mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from "node
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+  AgentBeforeSettleEvent,
+  ExtensionAPI,
+  ExtensionContext,
+  ExtensionEvent,
+} from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -10,10 +15,21 @@ import { HookRuntime, parseHooks, registerHooks } from "./hooks.js";
 import { loadPlugin, type PluginResources } from "./plugin.js";
 
 const roots: string[] = [];
+
+type HookFixture =
+  | string
+  | number
+  | boolean
+  | null
+  | HookFixture[]
+  | { [key: string]: HookFixture };
+
 afterEach(async () => {
   vi.unstubAllEnvs();
+
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
 });
+
 async function fixture(style: "copilot" | "codex" = "copilot") {
   const root = await mkdtemp(path.join(tmpdir(), "pi-hooks-"));
   roots.push(root);
@@ -23,7 +39,13 @@ async function fixture(style: "copilot" | "codex" = "copilot") {
     path.join(root, style === "codex" ? ".codex-plugin/plugin.json" : "plugin.json"),
     '{"name":"fixture"}',
   );
-  const ctx = {
+
+  const context: Pick<ExtensionContext, "cwd" | "hasUI"> & {
+    sessionManager: Pick<
+      ExtensionContext["sessionManager"],
+      "getSessionId" | "getSessionFile" | "getBranch"
+    >;
+  } = {
     cwd: root,
     hasUI: false,
     sessionManager: {
@@ -31,12 +53,17 @@ async function fixture(style: "copilot" | "codex" = "copilot") {
       getSessionFile: () => undefined,
       getBranch: () => [],
     },
-  } as unknown as ExtensionContext;
+  };
+
+  // SAFETY: runtime tests access only cwd, hasUI, sessionManager's three methods, and absent signal/model.
+  const ctx = context as ExtensionContext;
+
   return { root, ctx };
 }
+
 function plugin(
   root: string,
-  hooks: unknown,
+  hooks: HookFixture,
   style: "copilot" | "codex" = "copilot",
 ): PluginResources {
   return {
@@ -48,7 +75,8 @@ function plugin(
     hookSources: [hooks],
   };
 }
-const emit = (value: unknown) => `printf '%s' '${JSON.stringify(value)}'`;
+
+const emit = (value: HookFixture) => `printf '%s' '${JSON.stringify(value)}'`;
 
 it("discovers both defaults, inline and explicit hook sources without escaping plugin roots", async () => {
   const { root } = await fixture();
@@ -82,6 +110,7 @@ it("discovers both defaults, inline and explicit hook sources without escaping p
 it("isolates malformed handlers, unsupported events/types, invalid regex and disabled sources", async () => {
   const { root } = await fixture();
   const warn = vi.fn();
+
   const hooks = parseHooks(
     [
       plugin(root, {
@@ -97,6 +126,7 @@ it("isolates malformed handlers, unsupported events/types, invalid regex and dis
     ],
     warn,
   );
+
   expect(hooks).toHaveLength(1);
   expect(warn).toHaveBeenCalledTimes(4);
 });
@@ -131,6 +161,67 @@ it("passes JSON stdin, literal env and persistent plugin paths with exec", async
   expect(data.data).toContain("plugin-data");
   expect(data.literal).toBe("!echo no ${UNSET}");
   expect(data.cwd).toBe(await realpath(root));
+  runtime.dispose();
+});
+
+it("isolates invalid handler fields while retaining nullish defaults and unused platform commands", async () => {
+  const { root } = await fixture();
+  const warn = vi.fn();
+
+  const hooks = parseHooks(
+    [
+      plugin(root, {
+        hooks: {
+          PreToolUse: [
+            { command: "true", args: [1] },
+            { command: "true", env: { "line\nbreak": 1 } },
+            { command: "true", cwd: null },
+            { command: "true", timeout: 0 },
+            { command: "true", matcher: null },
+            { command: "true", type: null, timeoutSec: null, timeout: 2 },
+            process.platform === "win32"
+              ? { command: "true", bash: 42 }
+              : { command: "true", commandWindows: 42 },
+          ],
+        },
+      }),
+    ],
+    warn,
+  );
+
+  expect(hooks).toHaveLength(2);
+  expect(warn).toHaveBeenCalledTimes(5);
+});
+
+it("keeps tolerant output fields independent and ignores specific output for another event", async () => {
+  const { root, ctx } = await fixture();
+  const runtime = new HookRuntime(vi.fn());
+  runtime.load([
+    plugin(root, {
+      hooks: {
+        PostToolUse: [
+          {
+            command: emit({
+              additionalContext: "retained",
+              hookSpecificOutput: {
+                hookEventName: "PreToolUse",
+                additionalContext: "ignored",
+                permissionDecision: "deny",
+              },
+              modifiedArgs: [],
+              modifiedResult: { resultType: "failure", textResultForLlm: 7 },
+              modifiedTransformedPrompt: false,
+              systemMessage: ["ignored"],
+            }),
+          },
+        ],
+      },
+    }),
+  ]);
+
+  expect(await runtime.run("PostToolUse", {}, ctx)).toEqual({
+    context: "retained",
+  });
   runtime.dispose();
 });
 
@@ -190,10 +281,12 @@ it("fails closed for Copilot command errors, open for Codex errors and all timeo
   const { root, ctx } = await fixture();
   const warn = vi.fn();
   const runtime = new HookRuntime(warn);
+
   for (const style of ["copilot", "codex"] as const) {
     runtime.load([plugin(root, { hooks: { PreToolUse: [{ command: "exit 1" }] } }, style)]);
     expect(Boolean((await runtime.run("PreToolUse", {}, ctx)).block)).toBe(style === "copilot");
   }
+
   runtime.load([
     plugin(root, { hooks: { PreToolUse: [{ command: "echo policy >&2; exit 2" }] } }, "codex"),
   ]);
@@ -259,15 +352,43 @@ it("starts all matching Codex hooks concurrently and merges in declaration order
 
 it("maps Pi input, validated tool mutations, result redaction, compaction, and bounded continuations", async () => {
   const { root, ctx } = await fixture();
+
+  interface TestHookResult {
+    content?: { type: string; text: string }[];
+    structuredContent?: HookFixture;
+    continue?: boolean;
+  }
+
   type Handler = (
-    event: unknown,
+    event: Partial<ExtensionEvent>,
     ctx: ExtensionContext,
-  ) => Promise<Record<string, unknown> | undefined>;
+  ) => Promise<TestHookResult | undefined>;
+
   const handlers = new Map<string, Handler>();
-  const pi = {
-    on: (name: string, handler: Handler) => handlers.set(name, handler),
-    getAllTools: () => [{ name: "bash", parameters: Type.Object({ command: Type.String() }) }],
-  } as unknown as ExtensionAPI;
+
+  const api: Pick<ExtensionAPI, "on" | "getAllTools"> = {
+    on: (name, handler) => {
+      // SAFETY: tests invoke each captured handler only with its event's accessed fields and inspect only content/continue.
+      handlers.set(name, handler as Handler);
+
+      return () => {
+        handlers.delete(name);
+      };
+    },
+    getAllTools: () => [
+      {
+        name: "bash",
+        description: "Test shell",
+        parameters: Type.Object({ command: Type.String() }),
+        exposure: "direct",
+        sourceInfo: { path: root, source: "fixture", scope: "temporary", origin: "top-level" },
+      },
+    ],
+  };
+
+  // SAFETY: registration only calls on/getAllTools; fixture events supply the members each invoked handler reads.
+  const pi = api as ExtensionAPI;
+
   const runtime = new HookRuntime(vi.fn());
   registerHooks(pi, runtime);
   runtime.load([
@@ -295,13 +416,16 @@ it("maps Pi input, validated tool mutations, result redaction, compaction, and b
     ),
   ]);
   expect(await handlers.get("input")!({ text: "secret" }, ctx)).toEqual({ action: "handled" });
+
   const call = {
     toolName: "bash",
     input: { command: "original", timeout: 10 },
     toolCallId: "call",
   };
+
   await handlers.get("tool_call")!(call, ctx);
   expect(call.input).toEqual({ command: "safe" });
+
   const result = await handlers.get("tool_result")!(
     {
       ...call,
@@ -311,16 +435,27 @@ it("maps Pi input, validated tool mutations, result redaction, compaction, and b
     },
     ctx,
   );
+
   expect(result!.content).toEqual([{ type: "text", text: "redacted" }]);
   expect(result!.structuredContent).toBeUndefined();
   expect(await handlers.get("session_before_compact")!({ reason: "manual" }, ctx)).toEqual({
     cancel: true,
   });
-  const boundary = {
+
+  const boundary: AgentBeforeSettleEvent = {
+    type: "agent_before_settle",
     outcome: "completed",
     entries: [],
-    context: { canContinue: true, contextMessages: [] },
+    continue: false,
+    context: {
+      canContinue: true,
+      contextMessages: [],
+      contextEntries: [],
+      llmMessages: [],
+      pendingMessages: [],
+    },
   };
+
   for (let i = 0; i < 8; i++)
     expect((await handlers.get("agent_before_settle")!(boundary, ctx))!.continue).toBe(true);
   expect(await handlers.get("agent_before_settle")!(boundary, ctx)).toBeUndefined();

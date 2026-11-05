@@ -14,6 +14,7 @@ import { loadPlugin } from "./plugin.js";
 it("adds an already cloned Codex marketplace to global config and can load its plugins", async () => {
   const agent = await mkdtemp(path.join(tmpdir(), "pi-codex-marketplace-"));
   vi.stubEnv("PI_CODING_AGENT_DIR", agent);
+
   try {
     const source = "https://github.com/scaryrawr/scarydex";
     const root = marketplaceRoot(source);
@@ -36,21 +37,29 @@ it("adds an already cloned Codex marketplace to global config and can load its p
       "---\nname: decide\ndescription: Make decisions\n---\n",
     );
     let command: Parameters<ExtensionAPI["registerCommand"]>[1] | undefined;
-    const pi = {
+
+    const pi: Partial<ExtensionAPI> = {
       registerCommand: (_name: string, value: NonNullable<typeof command>) => {
         command = value;
       },
-      on: () => {},
-    } as unknown as ExtensionAPI;
-    extension(pi);
+      on: () => () => {},
+    };
+
+    // SAFETY: this test runs only command registration and event subscription on the partial API.
+    extension(pi as ExtensionAPI);
     const select = vi.fn().mockResolvedValueOnce("Add marketplace").mockResolvedValueOnce("Done");
     const notify = vi.fn();
-    const ctx = {
+
+    const ctx: Pick<ExtensionCommandContext, "hasUI" | "cwd"> & {
+      ui: Partial<ExtensionCommandContext["ui"]>;
+    } = {
       hasUI: true,
       cwd: agent,
       ui: { select, input: async () => source, notify },
-    } as unknown as ExtensionCommandContext;
-    await command!.handler("", ctx);
+    };
+
+    // SAFETY: the command accesses only hasUI, cwd, and ui.select/input/notify on this context.
+    await command!.handler("", ctx as ExtensionCommandContext);
     assert.deepEqual(await readConfig(globalConfigPath()), {
       plugins: [],
       marketplaces: [{ source, enabled: [] }],
@@ -59,7 +68,8 @@ it("adds an already cloned Codex marketplace to global config and can load its p
     assert.equal((await loadPlugin(path.join(root, "plugins/decide"))).skillPaths.length, 1);
     // Retrying the add reuses the checkout without duplicating configuration.
     select.mockResolvedValueOnce("Add marketplace").mockResolvedValueOnce("Done");
-    await command!.handler("", ctx);
+    // SAFETY: the same command still only accesses hasUI, cwd, and ui.select/input/notify.
+    await command!.handler("", ctx as ExtensionCommandContext);
     assert.equal((await readConfig(globalConfigPath())).marketplaces.length, 1);
   } finally {
     vi.unstubAllEnvs();

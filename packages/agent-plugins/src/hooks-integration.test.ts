@@ -17,6 +17,7 @@ it("runs configured plugin hooks through a real Pi extension runtime", async () 
   const previous = process.env.PI_CODING_AGENT_DIR;
   process.env.PI_CODING_AGENT_DIR = directory;
   let cleanup: (() => Promise<void>) | undefined;
+
   try {
     const root = path.join(directory, "plugin");
     await mkdir(root);
@@ -43,6 +44,7 @@ it("runs configured plugin hooks through a real Pi extension runtime", async () 
       JSON.stringify({ plugins: [root] }),
     );
     const settingsManager = SettingsManager.inMemory();
+
     const resourceLoader = new DefaultResourceLoader({
       cwd: directory,
       agentDir: directory,
@@ -53,7 +55,9 @@ it("runs configured plugin hooks through a real Pi extension runtime", async () 
       noContextFiles: true,
       extensionFactories: [agentPlugins],
     });
+
     await resourceLoader.reload();
+
     const { session } = await createAgentSession({
       cwd: directory,
       agentDir: directory,
@@ -61,10 +65,12 @@ it("runs configured plugin hooks through a real Pi extension runtime", async () 
       settingsManager,
       sessionManager: SessionManager.inMemory(directory),
     });
+
     cleanup = async () => {
       await session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" });
       session.dispose();
     };
+
     const errors: unknown[] = [];
     await session.bindExtensions({ onError: (error) => errors.push(error) });
     expect(
@@ -91,6 +97,7 @@ it("runs configured plugin hooks through a real Pi extension runtime", async () 
     expect(errors).toEqual([]);
   } finally {
     await cleanup?.();
+
     if (previous === undefined) delete process.env.PI_CODING_AGENT_DIR;
     else process.env.PI_CODING_AGENT_DIR = previous;
     await rm(directory, { recursive: true, force: true });
