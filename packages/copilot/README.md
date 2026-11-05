@@ -1,18 +1,18 @@
 # pi-copilot
 
-An extension for `pi` that integrates GitHub Copilot as a model provider.
+Use your account's GitHub Copilot models in `pi`.
 
-This extension overrides Pi's built-in Copilot support and is a vibe fork of [pi's `github-copilot.ts`](https://github.com/earendil-works/pi/blob/main/packages/ai/src/utils/oauth/github-copilot.ts). It wires GitHub's OAuth flow into `pi`, fetches the available Copilot models, and projects them into `pi`'s model format. It handles authentication, token refreshing, and local caching to ensure a seamless experience.
+The extension fetches the models available to your account and maps them to Pi's model format. It uses Pi's built-in `github-copilot` provider for [OAuth](https://github.com/earendil-works/pi/blob/main/packages/ai/src/utils/oauth/github-copilot.ts), credential storage, and token refresh. A local model cache lets it load models without waiting for a network request.
 
-## Getting Started
+## Install
 
-This is a `pi` extension. To install it, run:
+Install the extension:
 
 ```bash
 pi install git:github.com/scaryrawr/pi-copilot
 ```
 
-### Development
+## Development
 
 Install dependencies with `pnpm install --frozen-lockfile` from the monorepo root.
 Run the following from this package directory, or use `pnpm --filter pi-copilot <script>` from the root:
@@ -27,15 +27,15 @@ Run the following from this package directory, or use `pnpm --filter pi-copilot 
 
 ## Architecture
 
-The extension is composed of several specialized modules:
+The modules in `extensions/copilot/` divide the work:
 
 - `api.ts`: Fetches and parses the Copilot models payload.
 - `cache.ts`: Manages the on-disk cache of the model list.
-- `credentials.ts`: Handles storage and retrieval of authentication credentials.
+- `credentials.ts`: Reads stored authentication credentials.
 - `inference.ts`: Infers model capabilities from the API response.
-- `mapping.ts`: Translates Copilot API entries into `pi` compatible models, preserving curated fields.
-- `state.ts`: Manages the live state and re-projection of models.
+- `mapping.ts`: Maps Copilot API entries to Pi models and preserves curated fields.
+- `state.ts`: Updates the provider's models.
 
 ## Contributing
 
-Follow the guidelines in `AGENTS.md` for maintaining consistency and type safety.
+Read [AGENTS.md](AGENTS.md) before changing the provider.

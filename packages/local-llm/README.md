@@ -30,11 +30,11 @@ Use local models in the [pi coding agent](https://github.com/earendil-works/pi) 
    pi
    ```
 
-5. Optionally, run `/local-ai` to disable providers you do not want. Use the up and down arrow keys to navigate, Space to toggle, Enter to save, or Escape to cancel.
+5. Run `/local-ai` if you want to disable providers. Use the up and down arrow keys to navigate, Space to toggle, Enter to save, or Escape to cancel.
 
 6. If you changed provider selections, restart pi to apply them. Select a discovered model in pi's model picker.
 
-All providers are enabled by default. The plugin does not install model servers or download models.
+The plugin does not install model servers or download models.
 
 ## Configure a server
 
@@ -57,7 +57,7 @@ For example, this configuration sets Ollama's default server address. Other prov
 
 Omit `baseUrl` and `apiKey` to use provider defaults. Set `apiKey` to your server's token if authentication is required. Use the server's root URL for `baseUrl`, without a trailing slash or `/v1`.
 
-See [`pi-local-llm.example.json`](pi-local-llm.example.json) for all provider keys and default addresses. That example enables all providers by default.
+See [`pi-local-llm.example.json`](pi-local-llm.example.json) for all provider keys and default addresses.
 
 Provider settings always come from this shared file, even when the plugin is installed with `--local`. There are no provider-specific environment variables.
 
@@ -67,12 +67,12 @@ Restart pi after changing the configuration or the server's available models.
 
 If no models appear:
 
-- Run `/local-ai` and make sure the provider is enabled (it is by default), then restart pi.
+- Run `/local-ai` and make sure the provider is enabled, then restart pi.
 - Check that the model server is running and has a model available.
 - Check that `baseUrl` matches the server address and `apiKey` matches any required token.
 - Check that `pi-local-llm.json` contains valid JSON. For the provider you want to use, omit `enabled` or set it to the boolean `true`.
 
-Missing or malformed configuration falls back to defaults, so providers stay enabled by default. Unavailable providers are skipped silently so pi can still start.
+If the configuration is missing or malformed, the plugin uses defaults with all providers enabled. It skips unavailable providers without reporting an error, so pi can still start.
 
 ## Remove
 

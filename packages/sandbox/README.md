@@ -15,9 +15,9 @@ pnpm install --frozen-lockfile
 pi -e ./packages/sandbox/extensions/mxc.ts
 ```
 
-To keep the extension enabled across sessions, run `pi install /absolute/path/to/pi-mono/packages/sandbox` after installing dependencies in the checkout. This scaffold is not published to npm.
+To keep the extension enabled across sessions, run `pi install /absolute/path/to/pi-mono/packages/sandbox` after installing dependencies in the checkout. This extension is not published to npm.
 
-Run `/sandbox init` in pi to create `<agentDir>/pi-mxc.json`. The default location is `~/.pi/agent/pi-mxc.json`. Pi's `PI_CODING_AGENT_DIR` override is supported.
+Run `/sandbox init` in pi to create `<agentDir>/pi-mxc.json`. The default location is `~/.pi/agent/pi-mxc.json`. Set `PI_CODING_AGENT_DIR` to use a different agent directory.
 
 A missing config uses enabled, restrictive defaults without writing a file. Invalid JSON, invalid policy fields, an unavailable backend, or a native launch failure blocks bash. The extension never falls back to local execution while sandboxing is enabled.
 
@@ -33,7 +33,9 @@ Policy commands change only the current session unless you put `--persist` befor
 /sandbox reset
 ```
 
-The first grant is temporary. The second changes saved defaults for future sessions. `/sandbox reset` discards session overrides without changing saved defaults. Session overrides also clear on reload, session switch, fork, or restart, including when you resume an old conversation. Newly added session paths are resolved against the granting directory, so changing directories does not redirect a grant. Existing saved grants remain in place until you explicitly remove them.
+The first grant is temporary. The second changes saved defaults for future sessions. `/sandbox reset` discards session overrides without changing saved defaults. Session overrides also clear on reload, session switch, fork, or restart, including when you resume an old conversation.
+
+The extension resolves new session paths against the directory where you grant them. Changing directories does not redirect a grant. Existing saved grants remain until you remove them.
 
 By default, bash inherits the pi process's `PATH`. The extension discovers tool directories and grants read-only access to their runtimes, including version-manager links such as fnm and Homebrew installations. It does not run shell startup files or copy your entire host environment. Start pi from a shell where your tools already work.
 
@@ -53,13 +55,15 @@ If you explicitly need unrestricted outbound access:
 /sandbox network allow
 ```
 
-This does not permit ingress or host loopback. Hostname allowlists are not available in this scaffold. Restore the restriction with `/sandbox network deny` when finished.
+This does not permit inbound traffic or host loopback. The extension does not support hostname allowlists. Restore the restriction with `/sandbox network deny` when finished.
 
 Use `/sandbox off` only when you want bash to run locally without MXC for this session. Use `/sandbox on` to restore sandboxing, or `/sandbox reset` to restore all saved defaults. Saving a disabled default requires `/sandbox --persist off`.
 
-Changes apply to the next command. A running command keeps the configuration it started with. Saved defaults are global, with no project override that can weaken them. Direct edits to the config file are persistent. `--persist` changes saved defaults only and never saves unrelated session grants; active session overrides continue to apply until reset.
+Changes apply to the next command. A running command keeps the configuration it started with. Saved defaults are global, with no project override that can weaken them. Direct edits to the config file are persistent.
 
-See [Configuration reference](docs/configuration.md) for every field and command, or use [pi-mxc.example.json](pi-mxc.example.json) as a starting point.
+`--persist` changes saved defaults only. It never saves unrelated session grants. Active session overrides continue to apply until reset.
+
+See the [configuration reference](docs/configuration.md) for every field and command, or start with [pi-mxc.example.json](pi-mxc.example.json).
 
 ## Use Git in the sandbox
 
@@ -94,7 +98,7 @@ SSH keys, credential helpers, and commit-signing tools need their own explicit a
 - Linux needs Bubblewrap and its host prerequisites, including usable namespaces.
 - Windows needs a supported MXC ProcessContainer host and an accessible bash executable. Set `shellPath` and its filesystem grants for your installation.
 
-Native MXC validation decides whether the selected host can enforce a policy. Backend discovery is advisory, not a guarantee of execution. Only macOS Seatbelt has been tested live for this scaffold.
+Native MXC validation decides whether the selected host can enforce a policy. Discovering a backend does not guarantee that it can execute a command. Live testing of this extension has covered only macOS Seatbelt.
 
 The Node SDK's [V1 reference](https://github.com/microsoft/mxc/tree/main/docs/api-reference/node/v1) and [backend guides](https://github.com/microsoft/mxc/tree/main/docs/backends) describe the current platform requirements and enforcement limits.
 
@@ -109,10 +113,10 @@ pnpm --filter pi-mxc test:integration
 pnpm --filter pi-mxc test:rpc
 ```
 
-`check` runs TypeScript native preview, the monorepo root's shared type-aware Oxlint and Anti-Slop rules, Oxfmt, and unit tests. `test:integration` runs actual MXC workloads and requires a usable native backend. It does not skip missing prerequisites. The live tests use Unix bash and `/usr/bin/curl`, so run them on macOS or Linux.
+`check` runs TypeScript native preview, the monorepo root's shared type-aware Oxlint and Anti-Slop rules, Oxfmt, and unit tests. `test:integration` runs MXC workloads and requires a usable native backend. Missing prerequisites fail the run rather than skip tests. The live tests use Unix bash and `/usr/bin/curl`, so run them on macOS or Linux.
 
 The integration suite checks host Node execution, linked tool runtimes and read-only enforcement, a local Git workflow, host Git identity, read-only global config, private temporary storage, allowed and denied filesystem operations, symlink containment, environment isolation, loopback networking, shell quoting, exit status, timeout, and cancellation. It does not certify every backend or policy combination.
 
-`test:rpc` requires Python 3 and an installed `pi` command. It starts an isolated pi instance with a temporary agent directory, drives `/sandbox` commands and the JSON editor, and checks actual config files, session-switch cleanup, and native user-bash execution. It makes no model calls. Inside an existing sandbox, use `pnpm --filter pi-mxc test:rpc --commands-only` to verify policy commands without launching nested native sandboxes.
+`test:rpc` requires Python 3 and an installed `pi` command. It starts an isolated pi instance with a temporary agent directory, runs `/sandbox` commands, and uses the JSON editor. It checks config files, session-switch cleanup, and native user-bash execution without making model calls. Inside an existing sandbox, use `pnpm --filter pi-mxc test:rpc --commands-only` to verify policy commands without launching nested native sandboxes.
 
 [Design notes](docs/design.md) explain the integration boundaries and follow-up work.

@@ -1,6 +1,6 @@
 # pi-agent-plugins
 
-Load local [Agent Plugins](https://github.com/agentplugins/agent-plugins-spec/blob/main/spec/1.0.0.md) directories into [pi](https://github.com/earendil-works/pi). This version supports the **published 1.0.0** format (not the 1.1.0 working draft). Portable skills are exposed through `resources_discover`; portable `mcp.json` servers are validated and registered through Pi's built-in `registerMcpServer` API (Pi 0.99.1 or newer).
+Load local [Agent Plugins](https://github.com/agentplugins/agent-plugins-spec/blob/main/spec/1.0.0.md) directories into [pi](https://github.com/earendil-works/pi). The loader supports the published 1.0.0 format, not the 1.1.0 working draft. It exposes portable skills through `resources_discover` and validates portable `mcp.json` servers before registering them with Pi's built-in `registerMcpServer` API. MCP support requires Pi 0.99.1 or newer.
 
 ## Install
 
@@ -10,11 +10,15 @@ pi install git:github.com/scaryrawr/pi-agent-plugins
 
 Keep Pi's built-in MCP and tool-search extensions enabled. Pi owns MCP connections, OAuth, tool discovery, execution, and shutdown; this loader only adapts the portable configuration. No separate `pi-mcp` or `pi-dynamic-tools` extension is required.
 
-If upgrading, remove `pi-mcp` and `pi-dynamic-tools` from your Pi settings after updating this loader. Native MCP configuration belongs in `<pi agent directory>/mcp.json` under `mcpServers`, or in a trusted project's `.pi/mcp.json`. Legacy flat maps, `.mcp.json`, cwd-level config, `PI_MCP_CONFIG_DIRS`, and `--mcp` are not read by the built-in support. Use `/mcp` or `pi mcp login <server>` instead of `/mcp-login`; old `mcp-oauth/` credentials require a fresh login. Built-in `tool_search` replaces `search_tools` (keyword ranking only, not the old semantic-model mode).
+If upgrading, remove `pi-mcp` and `pi-dynamic-tools` from your Pi settings after updating this loader. Native MCP configuration belongs in `<pi agent directory>/mcp.json` under `mcpServers`, or in a trusted project's `.pi/mcp.json`. Pi's built-in support does not read legacy flat maps, `.mcp.json`, config in the working directory, `PI_MCP_CONFIG_DIRS`, or `--mcp`.
+
+Use `/mcp` or `pi mcp login <server>` instead of `/mcp-login`. Old `mcp-oauth/` credentials require a fresh login. Built-in `tool_search` replaces `search_tools` with keyword ranking. It does not support the old semantic-model mode.
 
 ## Configure
 
-Create `<pi agent directory>/pi-agent-plugins.json` for global plugins, or `<project>/.pi/pi-agent-plugins.json` for project plugins (only read when the project is trusted; pi may use a different project config directory name). Direct `plugins` paths must name **existing local directories**, not URLs, archives, or pi package names. Relative paths are resolved relative to the config file. Configured packages are trusted code: review them before adding them.
+Create `<pi agent directory>/pi-agent-plugins.json` for global plugins, or `<project>/.pi/pi-agent-plugins.json` for project plugins. Pi reads project configuration only in trusted projects and may use a different project config directory name.
+
+Direct `plugins` paths must name existing local directories, not URLs, archives, or pi package names. The loader resolves relative paths against the config file. Review packages before adding them because they run as trusted code.
 
 ```json
 {
@@ -26,11 +30,25 @@ Create `<pi agent directory>/pi-agent-plugins.json` for global plugins, or `<pro
 }
 ```
 
-Use `/marketplaces` in pi to add a local marketplace directory or an HTTPS GitHub repository (`https://github.com/owner/repo`), browse its entries, toggle plugins, refresh the cached checkout, or remove a marketplace from global config. New marketplace plugins start **disabled**. A marketplace must contain `.github/plugin/marketplace.json` (as in [scarypilot](https://github.com/scaryrawr/scarypilot/blob/main/.github/plugin/marketplace.json)) or, when that is absent, Codex's `.agents/plugins/marketplace.json` (as in [scarydex](https://github.com/scaryrawr/scarydex)). Both need `name` and `plugins` entries with `name` and a local `./` source: either `"source": "./plugins/my-plugin"` or Codex's `"source": { "source": "local", "path": "./plugins/my-plugin" }`. Only sources inside the real marketplace root are allowed; entries with remote sources or escaping symlinks are skipped. A selected plugin must contain a parseable root `plugin.json` or, when absent, `.codex-plugin/plugin.json` with a valid `name` to load. Skills still load only from the plugin root's `skills/`; Codex interface metadata and custom skill component paths are not activated; plugin hooks are adapted as described below. Existing invalid or escaping primary manifests are rejected, not bypassed via fallback paths. A missing `$schema` is treated as v1.0.0 for compatibility with marketplace packages; an explicit schema other than the v1.0.0 URL is rejected. Other Agent Plugins v1 manifest fields are validated as before. Marketplace failures do not prevent direct plugins or other entries from loading.
+### Marketplaces
 
-For ScaryDex, use `/marketplaces` → Add marketplace → `https://github.com/scaryrawr/scarydex`, then select the marketplace to enable individual plugins. A previous failed add that left a cached clone can simply be retried; the clone is reused and the config is saved after successful catalog validation.
+Use `/marketplaces` in pi to add a local marketplace directory or an HTTPS GitHub repository such as `https://github.com/owner/repo`. The command also lets you browse entries, toggle plugins, refresh a cached checkout, or remove a marketplace from global config. New marketplace plugins start disabled.
 
-GitHub marketplaces are cloned to `<pi agent directory>/marketplaces/<hash-of-URL>` when added via the UI. Startup uses the cached checkout **without network access**; `/marketplaces` → Refresh explicitly pulls changes. If configuring a GitHub URL by hand, add it through the UI once to populate the cache. Local marketplaces read directly from disk. Project marketplace config is honored only in trusted projects; the UI writes global config only. Enabling, disabling, refreshing, or removing plugins takes effect after `/reload` (including MCP connections). Review marketplace code before enabling: MCP servers and hook commands run with your permissions. Marketplace discovery is a pi convenience, **not** a portable Agent Plugins v1 component.
+A marketplace must contain `.github/plugin/marketplace.json`, as in [scarypilot](https://github.com/scaryrawr/scarypilot/blob/main/.github/plugin/marketplace.json). If that file is absent, the loader checks Codex's `.agents/plugins/marketplace.json`, as in [scarydex](https://github.com/scaryrawr/scarydex). Both formats require a marketplace `name` and `plugins` entries with a `name` and local `./` source. The source can be `"source": "./plugins/my-plugin"` or Codex's `"source": { "source": "local", "path": "./plugins/my-plugin" }`.
+
+Only sources inside the real marketplace root are allowed. The loader skips remote sources and symlinks that escape that root. Each selected plugin needs a parseable root `plugin.json` with a valid `name`. If that file is absent, the loader checks `.codex-plugin/plugin.json`. An invalid primary manifest or one that escapes the root is rejected rather than bypassed through a fallback path.
+
+Skills load only from the plugin root's `skills/` directory. The loader does not use Codex interface metadata or custom skill component paths. It adapts plugin hooks as described below.
+
+For compatibility with marketplace packages, the loader treats a missing `$schema` as v1.0.0. It rejects an explicit schema other than the v1.0.0 URL and validates the other Agent Plugins v1 manifest fields. A marketplace failure does not prevent direct plugins or other entries from loading.
+
+To add ScaryDex, run `/marketplaces`, choose "Add marketplace", and enter `https://github.com/scaryrawr/scarydex`. Then select the marketplace to enable individual plugins. If a failed add left a cached clone, retry the add. The loader reuses the clone and saves the config after validating the catalog.
+
+The UI clones GitHub marketplaces to `<pi agent directory>/marketplaces/<hash-of-URL>`. Startup uses the cached checkout without network access. To pull changes, choose "Refresh" in `/marketplaces`. If you configure a GitHub URL by hand, add it through the UI once to populate the cache. The loader reads local marketplaces directly from disk.
+
+Pi honors project marketplace config only in trusted projects. The UI writes global config only. After enabling, disabling, refreshing, or removing plugins, run `/reload` to apply the changes, including MCP connections. Review marketplace code before enabling it because MCP servers and hook commands run with your permissions. Marketplace discovery is a pi convenience, not a portable Agent Plugins v1 component.
+
+### Plugin layout
 
 Example package:
 
@@ -46,7 +64,7 @@ my-plugin/
         └── review.md               # optional, pi-specific
 ```
 
-`plugin.json` (the published v1.0.0 specification requires `$schema`; this loader also accepts its omission for compatibility):
+The published v1.0.0 specification requires `$schema` in `plugin.json`. This loader also accepts its omission for compatibility:
 
 ```json
 {
@@ -55,7 +73,7 @@ my-plugin/
 }
 ```
 
-`mcp.json` (optional; see the [spec](https://github.com/agentplugins/agent-plugins-spec/blob/main/spec/1.0.0.md#72-mcp-servers)):
+An optional `mcp.json` declares servers. See the [spec](https://github.com/agentplugins/agent-plugins-spec/blob/main/spec/1.0.0.md#72-mcp-servers):
 
 ```json
 {
@@ -66,15 +84,29 @@ my-plugin/
 }
 ```
 
-Portable components are discovered **only** at `skills/<name>/SKILL.md` (one level deep) and root `mcp.json`. Missing locations are fine; invalid skills or MCP server entries do not prevent valid siblings from loading. The adapter supports stdio and Streamable HTTP but skips legacy `sse`. Server names contain a sanitized plugin name, a canonical-root identity hash, and a sanitized server name with a name hash, so namesakes and punctuation cannot collide. Tools are named `mcp__<server>__<tool>` and use `deferred` exposure: Pi's built-in `tool_search` loads matching tools on demand. Registered servers appear in `/mcp`; a matching `mcp.json` entry takes precedence. Portable env/header values remain literal (only stdio `${PLUGIN_ROOT}` and `${PLUGIN_DATA}` placeholders expand); they do not gain Pi's shell-command or environment interpolation syntax. MCP subprocesses receive `PLUGIN_ROOT` and persistent `PLUGIN_DATA`; data is stored in `<pi agent directory>/plugin-data/<hash-of-canonical-plugin-root>`. Do not remove this directory if you want to preserve server state across plugin updates. After editing config or package contents, use `/reload` to restart the extension runtime and refresh resources and MCP connections. Pi can replace registrations and disconnect withdrawn servers within a runtime; a new session rebuilds this loader's registrations.
+The loader discovers portable components only at `skills/<name>/SKILL.md`, one level deep, and root `mcp.json`. Missing locations are allowed. Invalid skills or MCP server entries do not prevent valid siblings from loading.
 
-**Prompts are not a portable Agent Plugins v1 component.** This extension adopts the pi-specific namespace `com.scaryrawr.pi/` and loads direct `.md` files from its `prompts/` directory as pi prompt templates. A root-level `prompts/` directory is deliberately ignored. Paths escaping the resolved plugin root via symlinks are ignored. Pi may further validate or deduplicate contributed skills/templates according to its own resource rules.
+### MCP servers
 
-## Plugin hooks (best effort)
+The adapter supports stdio and Streamable HTTP but skips legacy `sse`. Server names contain a sanitized plugin name, a canonical-root identity hash, and a sanitized server name with a name hash. This prevents collisions between namesakes or names with different punctuation. Tools use the name `mcp__<server>__<tool>` and `deferred` exposure. Pi's built-in `tool_search` loads matching tools on demand. Registered servers appear in `/mcp`, where a matching `mcp.json` entry takes precedence.
 
-The loader adapts [Copilot hooks](https://docs.github.com/en/copilot/reference/hooks-reference) and [Codex hooks](https://learn.chatgpt.com/docs/hooks), not repository/user hook settings from either application. Root `plugin.json` selects Copilot defaults (`hooks.json` and `hooks/hooks.json`); `.codex-plugin/plugin.json` selects Codex defaults (`hooks/hooks.json`). A manifest `hooks` field replaces those defaults and accepts a `./`-prefixed file path, an inline hooks object, or an array of either. Hook config files and symlinks must remain inside the real plugin root. Invalid files/handlers are skipped independently of skills, prompts, MCP, and other hooks.
+Portable environment and header values remain literal. Only stdio `${PLUGIN_ROOT}` and `${PLUGIN_DATA}` placeholders expand. These values do not use Pi's shell-command or environment interpolation syntax.
 
-**Adding a direct plugin or enabling a marketplace plugin trusts its hook commands, including future edits/refreshes.** This loader does not implement Codex's per-definition hash review, either application's sandbox, or enterprise policy enforcement. Commands run on the host with your permissions and can read prompts, tool arguments/results, and the Pi transcript. Review code before enabling; disable the plugin and `/reload` to stop its hooks. `disableAllHooks: true` skips an individual hook source.
+MCP subprocesses receive `PLUGIN_ROOT` and persistent `PLUGIN_DATA`. The loader stores data in `<pi agent directory>/plugin-data/<hash-of-canonical-plugin-root>`. Keep this directory to preserve server state across plugin updates.
+
+After editing config or package contents, use `/reload` to restart the extension runtime and refresh resources and MCP connections. Pi can replace registrations and disconnect withdrawn servers within a runtime. A new session rebuilds this loader's registrations.
+
+### Pi prompt templates
+
+Prompts are not a portable Agent Plugins v1 component. This extension loads direct `.md` files from `com.scaryrawr.pi/prompts/` as pi prompt templates. It ignores a root-level `prompts/` directory and symlinks that escape the resolved plugin root. Pi may further validate or deduplicate contributed skills and templates according to its own resource rules.
+
+## Plugin hooks
+
+The loader adapts [Copilot hooks](https://docs.github.com/en/copilot/reference/hooks-reference) and [Codex hooks](https://learn.chatgpt.com/docs/hooks), not repository or user hook settings from either application. Root `plugin.json` selects Copilot defaults, `hooks.json` and `hooks/hooks.json`. A `.codex-plugin/plugin.json` manifest selects Codex's default, `hooks/hooks.json`.
+
+A manifest `hooks` field replaces those defaults. It accepts a `./`-prefixed file path, an inline hooks object, or an array of either. Hook config files and symlinks must remain inside the real plugin root. The loader skips invalid files and handlers without disabling skills, prompts, MCP, or other hooks.
+
+Adding a direct plugin or enabling a marketplace plugin trusts its hook commands, including future edits and refreshes. This loader does not implement Codex's per-definition hash review, either application's sandbox, or enterprise policy enforcement. Commands run on the host with your permissions and can read prompts, tool arguments and results, and the Pi transcript. Review code before enabling it. To stop its hooks, disable the plugin and run `/reload`. Set `disableAllHooks: true` to skip an individual hook source.
 
 Example Copilot `hooks.json`:
 
@@ -131,13 +163,19 @@ Equivalent Codex `hooks/hooks.json`:
 | `errorOccurred` / `ErrorOccurred`           | Tool failures, failed compactions, and failed settlement (generic agent error); not every internal Pi error                                                       |
 | `notification` / `Notification`             | `ui_prompt_start` approximated as `elicitation_dialog`; no shell/background-agent notification coverage                                                           |
 
-Only synchronous **command** handlers are supported, including Copilot `exec`/`args`, platform shell overrides, `cwd`, literal `env`, and seconds-based timeouts. HTTP, MCP-tool, prompt/agent, background handlers, `PermissionRequest`, and subagent events are warned and skipped: Pi has no equivalent native permission service or subagent lifecycle. No hooks run for interactive `!` shell commands. Commands invoked by hooks do not recursively trigger tool hooks. Pi nested tool calls do trigger tool hooks.
+The loader supports only synchronous command handlers, including Copilot `exec`/`args`, platform shell overrides, `cwd`, literal `env`, and timeouts in seconds. It warns and skips HTTP, MCP-tool, prompt/agent, and background handlers, as well as `PermissionRequest` and subagent events. Pi has no equivalent native permission service or subagent lifecycle. No hooks run for interactive `!` shell commands. Commands invoked by hooks do not recursively trigger tool hooks. Pi nested tool calls do trigger tool hooks.
 
-Copilot camelCase event names receive camelCase payloads and anchored regex matching against Pi tool names. PascalCase/Codex events receive snake_case payloads and match Pi names or aliases (`bash` → `Bash`, `read` → `Read`, `write` → `Write`, `edit` → `Edit`, `grep` → `Grep`, `find` → `Glob`). Codex regexes are unanchored unless explicitly anchored. MCP tools keep Pi's registered names. Tool input remains Pi-native (for example `path`, not `file_path`); transcripts remain Pi JSONL, not Copilot/Codex transcripts. Turn IDs and permission modes are not fabricated.
+Copilot camelCase event names receive camelCase payloads and anchored regex matching against Pi tool names. PascalCase/Codex events receive snake_case payloads and match Pi names or their aliases. The aliases are `Bash` for `bash`, `Read` for `read`, `Write` for `write`, `Edit` for `edit`, `Grep` for `grep`, and `Glob` for `find`. Codex regexes are unanchored unless explicitly anchored. MCP tools keep Pi's registered names.
 
-Copilot handlers execute in declaration order; matching Codex handlers start concurrently and merge in declaration order. Any denial wins. Copilot `preToolUse` command errors fail closed, except timeouts; Codex errors fail open except explicit exit `2` decisions. All timeouts fail open and warn. Defaults are 30 seconds for Copilot and 600 seconds for Codex, with Codex session-end/interrupt defaults of 1 second and a 3-second cap. Output is limited to 1 MiB per invocation and aggregated context to 10,000 characters; oversized output terminates the hook. Copilot progress JSON lines are stripped before parsing the final JSON. No output spilling or `additionalContextLimit` support is implemented.
+Tool input remains Pi-native, using `path` rather than `file_path`, for example. Transcripts remain Pi JSONL, not Copilot or Codex transcripts. The loader does not fabricate turn IDs or permission modes.
 
-Hook processes receive `PLUGIN_ROOT`, `PLUGIN_DATA`, `COPILOT_PLUGIN_ROOT/DATA`, and `CLAUDE_PLUGIN_ROOT/DATA`; data uses the same persistent directory as MCP. Shell hooks can use `$PLUGIN_ROOT`; `env` and direct-exec arguments are literal, with no config-value expansion. Default cwd is Pi's session cwd; explicit cwd is resolved relative to it. Processes are cancelled on operation abort and runtime shutdown (POSIX process groups; direct child on Windows). Context is injected as custom Pi messages rather than overwriting the system prompt.
+Copilot handlers execute in declaration order. Matching Codex handlers start concurrently and merge in declaration order. Any denial wins. Copilot `preToolUse` command errors fail closed, except timeouts. Codex errors fail open except explicit exit `2` decisions. All timeouts fail open and warn.
+
+Default timeouts are 30 seconds for Copilot and 600 seconds for Codex. Codex session-end and interrupt hooks default to 1 second, with a 3-second cap. The loader limits output to 1 MiB per invocation and aggregated context to 10,000 characters. Oversized output terminates the hook. The loader strips Copilot progress JSON lines before parsing the final JSON. It does not support output spilling or `additionalContextLimit`.
+
+Hook processes receive `PLUGIN_ROOT`, `PLUGIN_DATA`, `COPILOT_PLUGIN_ROOT/DATA`, and `CLAUDE_PLUGIN_ROOT/DATA`. Data uses the same persistent directory as MCP. Shell hooks can use `$PLUGIN_ROOT`. Values in `env` and direct-exec arguments are literal, with no config-value expansion.
+
+Hooks run in Pi's session working directory by default. The loader resolves an explicit `cwd` relative to that directory. On operation abort or runtime shutdown, it cancels POSIX process groups or the direct child on Windows. It adds context as custom Pi messages rather than overwriting the system prompt.
 
 ## Development
 
@@ -151,4 +189,4 @@ pnpm --filter pi-agent-plugins test
 pnpm --filter pi-agent-plugins fmt:check
 ```
 
-`pnpm install` requires access to the configured npm registry. There are no Git dependencies or bundled MCP transports. Shared versions are managed in the workspace catalog; see the [monorepo development guide](../../README.md#development).
+`pnpm install` requires access to the configured npm registry. There are no Git dependencies or bundled MCP transports. Shared versions live in the workspace catalog. See the [monorepo development guide](../../README.md#development).
