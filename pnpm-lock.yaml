@@ -192,10 +192,10 @@ catalogs:
       version: 1.0.0
     turndown:
       specifier: ^7.2.4
-      version: 7.2.4
+      version: 7.2.5
     typebox:
       specifier: ^1.3.34
-      version: 1.4.3
+      version: 1.4.4
     yaml:
       specifier: ^2.9.1
       version: 2.9.1
@@ -250,15 +250,15 @@ importers:
       '@types/node':
         specifier: catalog:types
         version: 26.6.6
-      tsrs:
-        specifier: catalog:typescript
-        version: 0.22.0-ts7.1.0-beta
       oxfmt:
         specifier: catalog:lint
         version: 0.71.0
+      tsrs:
+        specifier: catalog:typescript
+        version: 0.22.0-ts7.1.0-beta
       typebox:
         specifier: catalog:runtime
-        version: 1.4.3
+        version: 1.4.4
       vitest:
         specifier: catalog:test
         version: 5.1.0(@types/node@26.6.6)(vite@8.3.5(@types/node@26.6.6)(jiti@2.7.0)(yaml@2.9.1))
@@ -274,15 +274,15 @@ importers:
       '@types/node':
         specifier: catalog:types
         version: 26.6.6
-      tsrs:
-        specifier: catalog:typescript
-        version: 0.22.0-ts7.1.0-beta
       oxfmt:
         specifier: catalog:lint
         version: 0.71.0
+      tsrs:
+        specifier: catalog:typescript
+        version: 0.22.0-ts7.1.0-beta
       typebox:
         specifier: catalog:runtime
-        version: 1.4.3
+        version: 1.4.4
       vitest:
         specifier: catalog:test
         version: 5.1.0(@types/node@26.6.6)(vite@8.3.5(@types/node@26.6.6)(jiti@2.7.0)(yaml@2.9.1))
@@ -298,15 +298,15 @@ importers:
       '@types/node':
         specifier: catalog:types
         version: 26.6.6
-      tsrs:
-        specifier: catalog:typescript
-        version: 0.22.0-ts7.1.0-beta
       oxfmt:
         specifier: catalog:lint
         version: 0.71.0
+      tsrs:
+        specifier: catalog:typescript
+        version: 0.22.0-ts7.1.0-beta
       typebox:
         specifier: catalog:runtime
-        version: 1.4.3
+        version: 1.4.4
       vitest:
         specifier: catalog:test
         version: 5.1.0(@types/node@26.6.6)(vite@8.3.5(@types/node@26.6.6)(jiti@2.7.0)(yaml@2.9.1))
@@ -322,15 +322,18 @@ importers:
       '@types/node':
         specifier: catalog:types
         version: 26.6.6
-      tsrs:
-        specifier: catalog:typescript
-        version: 0.22.0-ts7.1.0-beta
       oxfmt:
         specifier: catalog:lint
         version: 0.71.0
+      tsrs:
+        specifier: catalog:typescript
+        version: 0.22.0-ts7.1.0-beta
       typebox:
         specifier: catalog:runtime
-        version: 1.4.3
+        version: 1.4.4
+      vitest:
+        specifier: catalog:test
+        version: 5.1.0(@types/node@26.6.6)(vite@8.3.5(@types/node@26.6.6)(jiti@2.7.0)(yaml@2.9.1))
 
   packages/sandbox:
     dependencies:
@@ -350,15 +353,15 @@ importers:
       '@types/node':
         specifier: catalog:types
         version: 26.6.6
-      tsrs:
-        specifier: catalog:typescript
-        version: 0.22.0-ts7.1.0-beta
       oxfmt:
         specifier: catalog:lint
         version: 0.71.0
+      tsrs:
+        specifier: catalog:typescript
+        version: 0.22.0-ts7.1.0-beta
       typebox:
         specifier: catalog:runtime
-        version: 1.4.3
+        version: 1.4.4
       vitest:
         specifier: catalog:test
         version: 5.1.0(@types/node@26.6.6)(vite@8.3.5(@types/node@26.6.6)(jiti@2.7.0)(yaml@2.9.1))
@@ -367,7 +370,7 @@ importers:
     dependencies:
       turndown:
         specifier: catalog:runtime
-        version: 7.2.4
+        version: 7.2.5
     devDependencies:
       '@earendil-works/pi-ai':
         specifier: catalog:pi
@@ -384,15 +387,15 @@ importers:
       '@types/turndown':
         specifier: catalog:types
         version: 5.0.6
-      tsrs:
-        specifier: catalog:typescript
-        version: 0.22.0-ts7.1.0-beta
       oxfmt:
         specifier: catalog:lint
         version: 0.71.0
+      tsrs:
+        specifier: catalog:typescript
+        version: 0.22.0-ts7.1.0-beta
       typebox:
         specifier: catalog:runtime
-        version: 1.4.3
+        version: 1.4.4
       vitest:
         specifier: catalog:test
         version: 5.1.0(@types/node@26.6.6)(vite@8.3.5(@types/node@26.6.6)(jiti@2.7.0)(yaml@2.9.1))
@@ -488,8 +491,8 @@ packages:
     resolution: {integrity: sha512-sl4Bm6yiMNYrZKkqqDFWN0UfnWhlS8ivKxrYl+6t0gCLrqr8y3B2IqZZbFRkfaVVp7C/baApyh71P+LeE1A2sQ==}
     engines: {node: '>=18.0.0'}
 
-  '@babel/runtime@7.29.10':
-    resolution: {integrity: sha512-NpugTzbKgGrNe45Ui32cN8vCFFMxVtP/9rtfwv0nP5FRDAjvYBxJcLVpYA9mr1jxP6cnIT7x9LUzuDTbWYYNRA==}
+  '@babel/runtime@7.29.13':
+    resolution: {integrity: sha512-v+oN26xP4YIlQsbQ/CbTH1WG5m/l/DjKKZNy/Kp3f/AFvbgt7Em/D0FeMM3O2hX0YzeN2M16W8lOpyhIkfCBcQ==}
     engines: {node: '>=6.9.0'}
 
   '@earendil-works/pi-agent-core@1.3.0':
@@ -1089,24 +1092,6 @@ packages:
   '@stablelib/base64@1.0.1':
     resolution: {integrity: sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ==}
 
-  '@types/chai@5.2.3':
-    resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
-
-  '@types/deep-eql@4.0.2':
-    resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
-
-  '@types/estree@1.0.10':
-    resolution: {integrity: sha512-lTyOMnOcmRBzdCv6/4zUZCrEhV0xrqQiUZBZtVcbmLHBXKLnN8q89v/wKRF/Q0HbwVsqbIG3o5HDoFl9sduM+g==}
-
-  '@types/node@26.6.6':
-    resolution: {integrity: sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==}
-
-  '@types/retry@0.12.0':
-    resolution: {integrity: sha512-wWKOClTTiizcZhXnPY4wikVAwmdYHp8q6DmC+EJUzAMsycb7HB32Kh9RN4+0gExjmPmZSAQjgURXIGATPegAvA==}
-
-  '@types/turndown@5.0.6':
-    resolution: {integrity: sha512-ru00MoyeeouE5BX4gRL+6m/BsDfbRayOskWqUvh7CLGW+UXxHQItqALa38kKnOiZPqJrtzJUgAC2+F0rL1S4Pg==}
-
   '@tsrs/darwin-arm64@0.22.0-ts7.1.0-beta':
     resolution: {integrity: sha512-mY0dMEtFxig4h5At3nByjZe8E4DTDPqqz73kkxQ6gqW5K9ym+u/VHQhtnpTF6ZOTkYyjP3bTaj5T8HcyoGVddA==}
     engines: {node: '>=16.20.0'}
@@ -1152,6 +1137,24 @@ packages:
     engines: {node: '>=16.20.0'}
     cpu: [x64]
     os: [win32]
+
+  '@types/chai@5.2.3':
+    resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
+
+  '@types/deep-eql@4.0.2':
+    resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
+
+  '@types/estree@1.0.10':
+    resolution: {integrity: sha512-lTyOMnOcmRBzdCv6/4zUZCrEhV0xrqQiUZBZtVcbmLHBXKLnN8q89v/wKRF/Q0HbwVsqbIG3o5HDoFl9sduM+g==}
+
+  '@types/node@26.6.6':
+    resolution: {integrity: sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==}
+
+  '@types/retry@0.12.0':
+    resolution: {integrity: sha512-wWKOClTTiizcZhXnPY4wikVAwmdYHp8q6DmC+EJUzAMsycb7HB32Kh9RN4+0gExjmPmZSAQjgURXIGATPegAvA==}
+
+  '@types/turndown@5.0.6':
+    resolution: {integrity: sha512-ru00MoyeeouE5BX4gRL+6m/BsDfbRayOskWqUvh7CLGW+UXxHQItqALa38kKnOiZPqJrtzJUgAC2+F0rL1S4Pg==}
 
   '@vitest/mocker@5.1.0':
     resolution: {integrity: sha512-5umB9/jlWcqVS6fsrFmv5Gdnpu6wAUio/lEOwAmvB7v+lFo/IW2B9FhAD0p19GCULTgMzLCdUmuCDCnAzWgppQ==}
@@ -1635,15 +1638,15 @@ packages:
     engines: {node: '>=16.20.0'}
     hasBin: true
 
-  turndown@7.2.4:
-    resolution: {integrity: sha512-I8yFsfRzmzK0WV1pNNOA4A7y4RDfFxPRxb3t+e3ui14qSGOxGtiSP6GjeX+Y6CHb7HYaFj7ECUD7VE5kQMZWGQ==}
+  turndown@7.2.5:
+    resolution: {integrity: sha512-EKZvCCFHh8sWttpAMs10U6niZFJ2cpz8LkCPlylxoG4JcHF50J7EHnnBW3AY1qXtUMu7kDjCp7dnggB1sIbqEQ==}
     engines: {node: '>=18', npm: '>=9'}
 
   typebox@1.3.27:
     resolution: {integrity: sha512-zu+jc1pcy4UiNThxikUr36f0Rybk9PEeCg/NE6adeWr/SKsdNO4EzZHYRDlv2YCVAfj3Odq3dESSo/jNyoBXzA==}
 
-  typebox@1.4.3:
-    resolution: {integrity: sha512-u3nyf7ZciAv1GOijVpI0TDt9At5wmEi7lSHSlRrnjuThv1DcB7fgGBqqrz+fGZ54jAfTpOOX0JXwxSIg3pnxQA==}
+  typebox@1.4.4:
+    resolution: {integrity: sha512-ctPyL8BZibv6HYU6cE3ldDtfCTh7nXM7WPuL3KQVyRRhMnZEzU3o2yLVywxEEFmKEx+8EdeqG1/uTNzazRbxLA==}
 
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
@@ -1961,7 +1964,7 @@ snapshots:
 
   '@aws/lambda-invoke-store@0.3.0': {}
 
-  '@babel/runtime@7.29.10': {}
+  '@babel/runtime@7.29.13': {}
 
   '@earendil-works/pi-agent-core@1.3.0(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(undici@8.10.2)(ws@8.22.1)':
     dependencies:
@@ -2390,23 +2393,6 @@ snapshots:
 
   '@stablelib/base64@1.0.1': {}
 
-  '@types/chai@5.2.3':
-    dependencies:
-      '@types/deep-eql': 4.0.2
-      assertion-error: 2.0.1
-
-  '@types/deep-eql@4.0.2': {}
-
-  '@types/estree@1.0.10': {}
-
-  '@types/node@26.6.6':
-    dependencies:
-      undici-types: 8.9.0
-
-  '@types/retry@0.12.0': {}
-
-  '@types/turndown@5.0.6': {}
-
   '@tsrs/darwin-arm64@0.22.0-ts7.1.0-beta':
     optional: true
 
@@ -2427,6 +2413,23 @@ snapshots:
 
   '@tsrs/win32-x64@0.22.0-ts7.1.0-beta':
     optional: true
+
+  '@types/chai@5.2.3':
+    dependencies:
+      '@types/deep-eql': 4.0.2
+      assertion-error: 2.0.1
+
+  '@types/deep-eql@4.0.2': {}
+
+  '@types/estree@1.0.10': {}
+
+  '@types/node@26.6.6':
+    dependencies:
+      undici-types: 8.9.0
+
+  '@types/retry@0.12.0': {}
+
+  '@types/turndown@5.0.6': {}
 
   '@vitest/mocker@5.1.0(vite@8.3.5(@types/node@26.6.6)(jiti@2.7.0)(yaml@2.9.1))':
     dependencies:
@@ -2589,7 +2592,7 @@ snapshots:
 
   json-schema-to-ts@3.1.1:
     dependencies:
-      '@babel/runtime': 7.29.10
+      '@babel/runtime': 7.29.13
       ts-algebra: 2.0.0
 
   jwa@2.0.1:
@@ -2888,13 +2891,13 @@ snapshots:
       '@tsrs/linux-x64-musl': 0.22.0-ts7.1.0-beta
       '@tsrs/win32-x64': 0.22.0-ts7.1.0-beta
 
-  turndown@7.2.4:
+  turndown@7.2.5:
     dependencies:
       '@mixmark-io/domino': 2.2.0
 
   typebox@1.3.27: {}
 
-  typebox@1.4.3: {}
+  typebox@1.4.4: {}
 
   undici-types@8.9.0: {}
 

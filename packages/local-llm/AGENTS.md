@@ -12,8 +12,8 @@ Providers are enabled unless explicitly disabled. Missing or malformed configura
 
 ## Discovery behavior
 
-Unavailable providers silently skip registration rather than failing Pi startup. Preserve provider-specific API shapes and model metadata instead of assuming every server is identical.
+Unavailable providers silently skip registration rather than failing Pi startup. Use `extensions/discovery.ts` for schema-validated discovery with a five-second deadline covering headers and body. Preserve provider-specific API shapes and model metadata instead of assuming every server is identical.
 
 Defaults point at local servers, but configured base URLs need not be local. Never log configured API keys or expose them to the model. Keep placeholder API-key defaults and endpoint/context defaults in the corresponding provider module.
 
-Use the root build/lint/format command inventory. This package currently has no test script.
+Use the root build/lint/format command inventory and `pnpm test:run`. Discovery and provider tests must isolate the agent directory and stub fetch; never read real configuration or contact model servers.

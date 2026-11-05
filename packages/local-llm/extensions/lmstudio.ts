@@ -1,9 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { Static } from "typebox";
 import { Type } from "typebox";
-import { Value } from "typebox/value";
 
 import { loadProviderConfig } from "./config.ts";
+import { fetchModelCatalog } from "./discovery.ts";
 
 const DEFAULT_BASE_URL = "http://localhost:1234";
 
@@ -23,29 +22,6 @@ const LmStudioModelsSchema = Type.Object({
   ),
 });
 
-type LmStudioModels = Static<typeof LmStudioModelsSchema>;
-
-async function fetchLmStudioModels(
-  baseUrl: string,
-  apiKey: string,
-): Promise<LmStudioModels | undefined> {
-  try {
-    const response = await fetch(`${baseUrl}/api/v1/models`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-
-    if (!response.ok) {
-      return undefined;
-    }
-
-    const payload: unknown = await response.json();
-
-    return Value.Check(LmStudioModelsSchema, payload) ? payload : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 const lmstudio = async function (pi: ExtensionAPI) {
   const config = loadProviderConfig("lmstudio");
 
@@ -54,7 +30,7 @@ const lmstudio = async function (pi: ExtensionAPI) {
   const baseUrl = config?.baseUrl ?? DEFAULT_BASE_URL;
   const apiKey = config?.apiKey ?? DEFAULT_API_KEY;
 
-  const payload = await fetchLmStudioModels(baseUrl, apiKey);
+  const payload = await fetchModelCatalog(`${baseUrl}/api/v1/models`, apiKey, LmStudioModelsSchema);
 
   if (payload === undefined) return;
 

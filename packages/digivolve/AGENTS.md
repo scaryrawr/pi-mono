@@ -31,6 +31,8 @@ skill guidance, and README behavior descriptions aligned.
   existing `AgentSession`. Mark the owning task cancelled, await cleanup, and
   allow only that task to release its guard so stale setup cannot overlap a new
   reflection or clear its guard.
+- Bind the side session's extensions before prompting and emit `session_shutdown`
+  before disposal, including when cancellation occurs during startup.
 - Reflection uses the active coding session's model and runs only in trusted
   projects. Do not retain raw prompts, commands, output, or errors in monitor state.
 

@@ -1,9 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { Static } from "typebox";
 import { Type } from "typebox";
-import { Value } from "typebox/value";
 
 import { loadProviderConfig } from "./config.ts";
+import { fetchModelCatalog } from "./discovery.ts";
 
 const DEFAULT_BASE_URL = "http://localhost:1337";
 
@@ -22,29 +21,6 @@ const OsaurusTagsSchema = Type.Object({
   ),
 });
 
-type OsaurusTags = Static<typeof OsaurusTagsSchema>;
-
-async function fetchOsaurusModels(
-  baseUrl: string,
-  apiKey: string,
-): Promise<OsaurusTags | undefined> {
-  try {
-    const response = await fetch(`${baseUrl}/api/tags`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-
-    if (!response.ok) {
-      return undefined;
-    }
-
-    const payload: unknown = await response.json();
-
-    return Value.Check(OsaurusTagsSchema, payload) ? payload : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 const osaurus = async function (pi: ExtensionAPI) {
   const config = loadProviderConfig("osaurus");
 
@@ -55,7 +31,7 @@ const osaurus = async function (pi: ExtensionAPI) {
   const contextLength = config?.contextLength ?? DEFAULT_CONTEXT_LENGTH;
   const maxTokens = Math.min(MAX_TOKENS_CEILING, Math.floor(contextLength / 4));
 
-  const payload = await fetchOsaurusModels(baseUrl, apiKey);
+  const payload = await fetchModelCatalog(`${baseUrl}/api/tags`, apiKey, OsaurusTagsSchema);
 
   if (payload === undefined) return;
 

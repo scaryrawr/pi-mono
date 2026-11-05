@@ -19,7 +19,8 @@
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "lint": "oxlint -c ../../.oxlintrc.json --tsconfig ./tsconfig.json extensions/*.ts",
-    "lint:fix": "oxlint -c ../../.oxlintrc.json --fix --tsconfig ./tsconfig.json extensions/*.ts"
+    "lint:fix": "oxlint -c ../../.oxlintrc.json --fix --tsconfig ./tsconfig.json extensions/*.ts",
+    "test:run": "vitest run"
   },
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "catalog:pi",
@@ -27,7 +28,8 @@
     "@types/node": "catalog:types",
     "oxfmt": "catalog:lint",
     "tsrs": "catalog:typescript",
-    "typebox": "catalog:runtime"
+    "typebox": "catalog:runtime",
+    "vitest": "catalog:test"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",

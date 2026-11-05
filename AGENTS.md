@@ -23,7 +23,7 @@ From the root, `pnpm check` runs build, lint, formatting checks, then tests. Ind
 
 For narrow validation, run `pnpm build && pnpm lint && pnpm fmt:check` from the affected package, followed by `pnpm test:run` where available. To select tests, use `pnpm exec vitest run <package-relative-test-path>` there. From the root, use `pnpm --filter <name-from-package.json> <script>`.
 
-Copilot, digivolve, and webfetch's `pnpm test` watch; use `test:run` for one-shot execution. Local-llm has no test script; webfetch currently has no tests. Root tests include agent-plugins' local integration tests but exclude sandbox's native/RPC suites; see its guide for prerequisites.
+Copilot, digivolve, and webfetch's `pnpm test` watch; use `test:run` for one-shot execution. Local-llm also provides a one-shot `test:run` script. Root tests include agent-plugins' local integration tests but exclude sandbox's native/RPC suites; see its guide for prerequisites.
 
 ## Shared constraints
 

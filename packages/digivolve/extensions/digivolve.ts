@@ -265,6 +265,10 @@ export default function digivolve(pi: ExtensionAPI) {
 
       if (run.cancelled) return;
 
+      await session.bindExtensions({});
+
+      if (run.cancelled) return;
+
       session.agent.state.messages = contextMessages;
 
       await session.prompt(FOLLOW_UP_PROMPT, { source: "extension" });
@@ -289,17 +293,23 @@ export default function digivolve(pi: ExtensionAPI) {
       // Background reflection is best-effort. Session replacement can also make
       // the originating extension runtime stale before a result is delivered.
     } finally {
-      if (session) {
-        try {
-          await session.abort();
-        } catch {
-          // Ignore abort errors during cleanup.
+      try {
+        if (session) {
+          try {
+            await session.abort();
+          } catch {
+            // Ignore abort errors during cleanup.
+          }
+
+          try {
+            await session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" });
+          } finally {
+            session.dispose();
+          }
         }
-
-        session.dispose();
+      } finally {
+        if (activeReflection === run) activeReflection = null;
       }
-
-      if (activeReflection === run) activeReflection = null;
     }
   }
 

@@ -1,9 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { Static } from "typebox";
 import { Type } from "typebox";
-import { Value } from "typebox/value";
 
 import { loadProviderConfig } from "./config.ts";
+import { fetchModelCatalog } from "./discovery.ts";
 
 const DEFAULT_BASE_URL = "http://127.0.0.1:18181";
 
@@ -22,29 +21,6 @@ const GenieXModelsSchema = Type.Object({
   ),
 });
 
-type GenieXModels = Static<typeof GenieXModelsSchema>;
-
-async function fetchGenieXModels(
-  baseUrl: string,
-  apiKey: string,
-): Promise<GenieXModels | undefined> {
-  try {
-    const response = await fetch(`${baseUrl}/v1/models`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-
-    if (!response.ok) {
-      return undefined;
-    }
-
-    const payload: unknown = await response.json();
-
-    return Value.Check(GenieXModelsSchema, payload) ? payload : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 const geniex = async function (pi: ExtensionAPI) {
   const config = loadProviderConfig("geniex");
 
@@ -53,7 +29,7 @@ const geniex = async function (pi: ExtensionAPI) {
   const baseUrl = config?.baseUrl ?? DEFAULT_BASE_URL;
   const apiKey = config?.apiKey ?? DEFAULT_API_KEY;
 
-  const payload = await fetchGenieXModels(baseUrl, apiKey);
+  const payload = await fetchModelCatalog(`${baseUrl}/v1/models`, apiKey, GenieXModelsSchema);
 
   if (payload === undefined) return;
 

@@ -1,9 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { Static } from "typebox";
 import { Type } from "typebox";
-import { Value } from "typebox/value";
 
 import { loadProviderConfig } from "./config.ts";
+import { fetchModelCatalog } from "./discovery.ts";
 
 const DEFAULT_BASE_URL = "http://localhost:11434";
 
@@ -22,26 +21,6 @@ const OllamaTagsSchema = Type.Object({
   ),
 });
 
-type OllamaTags = Static<typeof OllamaTagsSchema>;
-
-async function fetchOllamaModels(baseUrl: string, apiKey: string): Promise<OllamaTags | undefined> {
-  try {
-    const response = await fetch(`${baseUrl}/api/tags`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-
-    if (!response.ok) {
-      return undefined;
-    }
-
-    const payload: unknown = await response.json();
-
-    return Value.Check(OllamaTagsSchema, payload) ? payload : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 const ollama = async function (pi: ExtensionAPI) {
   const config = loadProviderConfig("ollama");
 
@@ -52,7 +31,7 @@ const ollama = async function (pi: ExtensionAPI) {
   const contextLength = config?.contextLength ?? DEFAULT_CONTEXT_LENGTH;
   const maxTokens = Math.min(MAX_TOKENS_CEILING, Math.floor(contextLength / 4));
 
-  const payload = await fetchOllamaModels(baseUrl, apiKey);
+  const payload = await fetchModelCatalog(`${baseUrl}/api/tags`, apiKey, OllamaTagsSchema);
 
   if (payload === undefined) return;
 

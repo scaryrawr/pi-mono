@@ -7,6 +7,9 @@ import type {
   ExtensionAPI,
   ExtensionContext,
   ExtensionEvent,
+  ExtensionHandler,
+  ToolResultEvent,
+  ToolResultEventResult,
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { afterEach, expect, it, vi } from "vitest";
@@ -460,4 +463,70 @@ it("maps Pi input, validated tool mutations, result redaction, compaction, and b
     expect((await handlers.get("agent_before_settle")!(boundary, ctx))!.continue).toBe(true);
   expect(await handlers.get("agent_before_settle")!(boundary, ctx)).toBeUndefined();
   runtime.dispose();
+});
+
+it("preserves image content and metadata when hooks only append context", async () => {
+  const { root, ctx } = await fixture();
+  let handler: ExtensionHandler<ToolResultEvent, ToolResultEventResult> | undefined;
+
+  const api: Pick<ExtensionAPI, "on"> = {
+    on: (name, callback) => {
+      if (name === "tool_result") {
+        // SAFETY: this callback is registered for tool_result and invoked with that event below.
+        handler = callback as ExtensionHandler<ToolResultEvent, ToolResultEventResult>;
+      }
+
+      return () => {};
+    },
+  };
+
+  const runtime = new HookRuntime(vi.fn());
+  // SAFETY: registering hooks only uses on; getAllTools is only used by tool_call handlers.
+  registerHooks(api as ExtensionAPI, runtime);
+  runtime.load([
+    plugin(root, {
+      hooks: {
+        postToolUse: [{ command: emit({ additionalContext: "notes" }) }],
+        postToolUseFailure: [{ command: emit({ additionalContext: "notes" }) }],
+      },
+    }),
+  ]);
+
+  try {
+    for (const isError of [false, true]) {
+      const image: ToolResultEvent["content"][number] = {
+        type: "image",
+        data: "AA==",
+        mimeType: "image/png",
+      };
+
+      const contents: ToolResultEvent["content"][] = [
+        [image],
+        [{ type: "text", text: "caption" }, image],
+      ];
+
+      for (const content of contents) {
+        const event: ToolResultEvent = {
+          type: "tool_result",
+          toolName: "read",
+          toolCallId: "image",
+          input: { path: "image.png" },
+          content,
+          details: { metadata: "retained" },
+          structuredContent: { imageId: "retained" },
+          isError,
+        };
+
+        expect(await handler!(event, ctx)).toEqual({
+          content: [...content, { type: "text", text: "notes" }],
+          details: event.details,
+          structuredContent: event.structuredContent,
+          isError,
+        });
+        expect(event.content).toEqual(content);
+      }
+    }
+  } finally {
+    runtime.dispose();
+  }
 });

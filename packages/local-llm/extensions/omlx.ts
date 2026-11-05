@@ -1,9 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { Static } from "typebox";
 import { Type } from "typebox";
-import { Value } from "typebox/value";
 
 import { loadProviderConfig } from "./config.ts";
+import { fetchModelCatalog } from "./discovery.ts";
 
 const DEFAULT_BASE_URL = "http://localhost:8000";
 
@@ -24,28 +23,6 @@ const OmlxModelsSchema = Type.Object({
   ),
 });
 
-type OmlxModels = Static<typeof OmlxModelsSchema>;
-
-async function fetchOMLXModels(baseUrl: string, apiKey: string): Promise<OmlxModels | undefined> {
-  try {
-    const response = await fetch(`${baseUrl}/v1/models/status`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    });
-
-    if (!response.ok) {
-      return undefined;
-    }
-
-    const payload: unknown = await response.json();
-
-    return Value.Check(OmlxModelsSchema, payload) ? payload : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 const omlx = async function (pi: ExtensionAPI) {
   const config = loadProviderConfig("omlx");
 
@@ -54,7 +31,7 @@ const omlx = async function (pi: ExtensionAPI) {
   const baseUrl = config?.baseUrl ?? DEFAULT_BASE_URL;
   const apiKey = config?.apiKey ?? DEFAULT_API_KEY;
 
-  const payload = await fetchOMLXModels(baseUrl, apiKey);
+  const payload = await fetchModelCatalog(`${baseUrl}/v1/models/status`, apiKey, OmlxModelsSchema);
 
   if (payload === undefined) return;
 

@@ -84,6 +84,57 @@ interface FetchDetails {
 }
 
 const WEBFETCH_PREVIEW_LINES = 15;
+const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
+
+/** Read at most 5 MiB of decoded response bytes, cancelling oversized downloads. */
+async function readResponseBody(response: Response, signal?: AbortSignal): Promise<Buffer> {
+  const reader = response.body?.getReader();
+
+  if (!reader) {
+    signal?.throwIfAborted();
+
+    return Buffer.alloc(0);
+  }
+
+  const chunks: Uint8Array[] = [];
+  let bytes = 0;
+
+  const onAbort = () => {
+    void reader.cancel(signal?.reason).catch(() => {});
+  };
+
+  signal?.addEventListener("abort", onAbort, { once: true });
+
+  try {
+    signal?.throwIfAborted();
+
+    if (Number(response.headers.get("content-length")) > MAX_RESPONSE_BYTES) {
+      throw new Error("Response exceeds the 5 MiB download limit.");
+    }
+
+    while (true) {
+      const { done, value } = await reader.read();
+      signal?.throwIfAborted();
+
+      if (done) break;
+      bytes += value.byteLength;
+
+      if (bytes > MAX_RESPONSE_BYTES) {
+        throw new Error("Response exceeds the 5 MiB download limit.");
+      }
+
+      chunks.push(value);
+    }
+
+    return Buffer.concat(chunks, bytes);
+  } catch (error) {
+    await reader.cancel().catch(() => {});
+    throw error;
+  } finally {
+    signal?.removeEventListener("abort", onAbort);
+    reader.releaseLock();
+  }
+}
 
 /**
  * Formats the "call" display text shown when webfetch is executing.
@@ -199,14 +250,14 @@ function formatDuration(ms: number): string {
 
 /**
  * Fetches a URL, converts HTML to markdown, and truncates the result.
- * Only HTTP and HTTPS protocols are supported. Responses over 5 MB are rejected.
+ * Only HTTP and HTTPS protocols are supported. Responses over 5 MiB are rejected.
  * Text content is truncated; image content is returned as base64.
  * @param params - The fetch input containing the URL.
  * @param signal - Optional abort signal for canceling the request.
  * @returns A promise resolving to the fetched content and optional truncation metadata.
- * @throws Error if the protocol is unsupported, the fetch fails, or the response exceeds 5 MB.
+ * @throws Error if the protocol is unsupported, the fetch fails, or the response exceeds 5 MiB.
  */
-const webfetch = async (
+export const webfetch = async (
   { url: urlStr }: FetchInput,
   signal?: AbortSignal,
 ): Promise<{
@@ -229,14 +280,14 @@ const webfetch = async (
     .trim()
     .toLowerCase();
 
-  const arrayBuffer = await response.arrayBuffer();
+  const body = await readResponseBody(response, signal);
 
   // Parse the media type (RFC 9110: media-type = type "/" subtype)
   const mediaType = contentType.split("/")[0] ?? "";
 
   if (mediaType === "image") {
     // Return image as base64-encoded ImageContent
-    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    const base64 = body.toString("base64");
 
     return {
       content: [{ type: "image", data: base64, mimeType: contentType }],
@@ -245,7 +296,7 @@ const webfetch = async (
   }
 
   // For text content (including text/html), decode and optionally convert
-  let textContent = new TextDecoder().decode(arrayBuffer);
+  let textContent = new TextDecoder().decode(body);
 
   if (contentType === "text/html") {
     textContent = turndownService.turndown(textContent);
@@ -279,7 +330,7 @@ export default async function (pi: ExtensionAPI) {
       label: "webfetch",
       description:
         `Fetch information from the web, such as reading articles, accessing documentation, or gathering data from online sources. Use when user or instructions contain a URL that may provide more context/relevant information. ` +
-        `HTML content will be converted to markdown format for easier reading and processing. ` +
+        `HTML content will be converted to markdown format for easier reading and processing. Downloads over 5 MiB are rejected. ` +
         `Results are truncated to first ${DEFAULT_MAX_LINES} lines or ${formatSize(DEFAULT_MAX_BYTES)} (whichever is hit first) to prevent large responses from overwhelming the context window.`,
       promptSnippet: "Fetch web pages and convert HTML to markdown with truncation",
       parameters: fetchParams,

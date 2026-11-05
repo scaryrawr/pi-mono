@@ -10,6 +10,7 @@ import {
   type InputEventResult,
   type ToolCallEvent,
   type ToolResultEvent,
+  type ToolResultEventResult,
 } from "@earendil-works/pi-coding-agent";
 import { Type, type Static } from "typebox";
 import { Compile } from "typebox/compile";
@@ -919,7 +920,19 @@ export function registerHooks(pi: ExtensionAPI, runtime: HookRuntime): void {
       output.stop ||= codex.stop;
     }
 
-    if (output.result !== undefined || output.context || output.block || output.stop) {
+    if (output.context && output.result === undefined && !output.block && !output.stop) {
+      const result: ToolResultEventResult = {
+        content: [...event.content, { type: "text", text: output.context }],
+        details: event.details,
+        isError: event.isError,
+      };
+
+      if (event.structuredContent !== undefined) result.structuredContent = event.structuredContent;
+
+      return result;
+    }
+
+    if (output.result !== undefined || output.block || output.stop) {
       const replacement =
         output.block ??
         (output.stop ? "Tool output stopped by plugin hook" : (output.result ?? rendered));

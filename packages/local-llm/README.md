@@ -72,7 +72,7 @@ If no models appear:
 - Check that `baseUrl` matches the server address and `apiKey` matches any required token.
 - Check that `pi-local-llm.json` contains valid JSON. For the provider you want to use, omit `enabled` or set it to the boolean `true`.
 
-If the configuration is missing or malformed, the plugin uses defaults with all providers enabled. It skips unavailable providers without reporting an error, so pi can still start.
+If the configuration is missing or malformed, the plugin uses defaults with all providers enabled. It skips unavailable providers without reporting an error, so pi can still start. Each provider discovery request has a five-second deadline covering both response headers and the JSON body.
 
 ## Remove
 

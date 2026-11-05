@@ -58,7 +58,9 @@ the active coding session's model and thinking level.
 The side session uses `SessionManager.inMemory(cwd)` and `buildSessionContext`
 to snapshot the main conversation. An explicitly initialized
 `DefaultResourceLoader` provides project skills and prompts and preserves other
-extensions, including model providers. It filters out the extension registering
+extensions, including model providers. The side session binds extensions before
+prompting and emits `session_shutdown` before disposal, including on cancellation.
+It filters out the extension registering
 `digivolve`, regardless of installation path or package name, to prevent
 recursive reflection sessions.
 
@@ -116,7 +118,8 @@ pnpm --filter @scaryrawr/pi-digivolve test:run
 
 Build type-checks with tsrs without emitting JavaScript. Tests cover adaptive
 turn evidence, one-reflection-per-message behavior, and Pi's package discovery
-of the extension and skill without model calls.
+of the extension and skill, plus side-session extension startup, resource
+discovery, shutdown, and cancellation without model calls.
 Use `pnpm --filter @scaryrawr/pi-digivolve pack --out <temporary-directory>/digivolve.tgz` to
 check the published files and catalog resolution.
 
