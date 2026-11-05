@@ -1,0 +1,58 @@
+{
+  "name": "@scaryrawr/pi-digivolve",
+  "version": "1.0.0",
+  "description": "Pi extension that runs one final digivolution reflection pass to improve durable repo instructions and skills when useful.",
+  "keywords": [
+    "agents",
+    "digivolution",
+    "pi",
+    "pi-package",
+    "skills"
+  ],
+  "license": "MIT",
+  "author": "Mike Wallio",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scaryrawr/pi-mono.git",
+    "directory": "packages/digivolve"
+  },
+  "files": [
+    "extensions/**/*.ts",
+    "!extensions/**/*.test.ts",
+    "skills",
+    "README.md"
+  ],
+  "type": "module",
+  "main": "extensions/digivolve.ts",
+  "scripts": {
+    "build": "tsrs -p ./tsconfig.json",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "lint": "oxlint -c ../../.oxlintrc.json --tsconfig ./tsconfig.json extensions",
+    "lint:fix": "oxlint -c ../../.oxlintrc.json --fix --tsconfig ./tsconfig.json extensions",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "catalog:pi",
+    "@earendil-works/pi-coding-agent": "catalog:pi",
+    "@types/node": "catalog:types",
+    "oxfmt": "catalog:lint",
+    "tsrs": "catalog:typescript",
+    "typebox": "catalog:runtime",
+    "vitest": "catalog:test"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions/digivolve.ts"
+    ],
+    "skills": [
+      "./skills"
+    ]
+  }
+}

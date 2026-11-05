@@ -1,7 +1,9 @@
 # pi-mono
 
 Extensions for the Pi coding agent. Install the packages you need.
-Each package keeps the full git history of its original standalone repository.
+The original five packages keep the full git history of their standalone
+repositories. Digivolve currently has a pinned source-snapshot import; see its
+[migration record](packages/digivolve/README.md#migration-source).
 
 ## Packages
 
@@ -9,6 +11,7 @@ Each package keeps the full git history of its original standalone repository.
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | [`agent-plugins`](packages/agent-plugins) | Loads Agent Plugins skills, MCP servers, and hooks from local directories or marketplaces.                |
 | [`copilot`](packages/copilot)             | Adds account-specific models to Pi's built-in GitHub Copilot provider.                                    |
+| [`digivolve`](packages/digivolve)         | Runs adaptive background reflection to improve durable repository instructions and skills.                |
 | [`local-llm`](packages/local-llm)         | Discovers models from Ollama, LM Studio, OMLX, Osaurus, and GenieX. Configure providers with `/local-ai`. |
 | [`sandbox`](packages/sandbox)             | Runs bash through Microsoft MXC. Other Pi tools and extensions remain outside the sandbox.                |
 | [`webfetch`](packages/webfetch)           | Adds a `webfetch` tool that converts HTML to Markdown and returns images as image content.                |

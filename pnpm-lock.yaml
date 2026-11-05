@@ -287,6 +287,30 @@ importers:
         specifier: catalog:test
         version: 5.1.0(@types/node@26.6.6)(vite@8.3.5(@types/node@26.6.6)(jiti@2.7.0)(yaml@2.9.1))
 
+  packages/digivolve:
+    devDependencies:
+      '@earendil-works/pi-ai':
+        specifier: catalog:pi
+        version: 1.3.0(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(undici@8.10.2)(ws@8.22.1)
+      '@earendil-works/pi-coding-agent':
+        specifier: catalog:pi
+        version: 1.3.0(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(ws@8.22.1)
+      '@types/node':
+        specifier: catalog:types
+        version: 26.6.6
+      tsrs:
+        specifier: catalog:typescript
+        version: 0.22.0-ts7.1.0-beta
+      oxfmt:
+        specifier: catalog:lint
+        version: 0.71.0
+      typebox:
+        specifier: catalog:runtime
+        version: 1.4.3
+      vitest:
+        specifier: catalog:test
+        version: 5.1.0(@types/node@26.6.6)(vite@8.3.5(@types/node@26.6.6)(jiti@2.7.0)(yaml@2.9.1))
+
   packages/local-llm:
     devDependencies:
       '@earendil-works/pi-coding-agent':

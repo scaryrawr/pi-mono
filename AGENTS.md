@@ -4,13 +4,14 @@
 
 This pnpm workspace contains TypeScript/ESM Pi extensions, not a single application. Each package's `package.json` declares its runtime entrypoints in `pi.extensions`; `build` type-checks without emitting JavaScript.
 
-| Package directory        | Responsibility                                                   |
-| ------------------------ | ---------------------------------------------------------------- |
-| `packages/agent-plugins` | Agent Plugins discovery, trust, hooks, and native MCP adaptation |
-| `packages/copilot`       | Account-specific models over Pi's built-in Copilot provider      |
-| `packages/local-llm`     | Model provider extensions and the `/local-ai` configuration UI   |
-| `packages/sandbox`       | MXC-backed bash execution, not whole-agent isolation             |
-| `packages/webfetch`      | HTTP fetching, content conversion, and TUI previews              |
+| Package directory        | Responsibility                                                        |
+| ------------------------ | --------------------------------------------------------------------- |
+| `packages/agent-plugins` | Agent Plugins discovery, trust, hooks, and native MCP adaptation      |
+| `packages/copilot`       | Account-specific models over Pi's built-in Copilot provider           |
+| `packages/digivolve`     | Adaptive background reflection for repository instructions and skills |
+| `packages/local-llm`     | Model provider extensions and the `/local-ai` configuration UI        |
+| `packages/sandbox`       | MXC-backed bash execution, not whole-agent isolation                  |
+| `packages/webfetch`      | HTTP fetching, content conversion, and TUI previews                   |
 
 Read the package's `AGENTS.md` before changing its behavior. Pull request review workflow: [code-review](.github/skills/code-review/SKILL.md).
 
@@ -22,7 +23,7 @@ From the root, `pnpm check` runs build, lint, formatting checks, then tests. Ind
 
 For narrow validation, run `pnpm build && pnpm lint && pnpm fmt:check` from the affected package, followed by `pnpm test:run` where available. To select tests, use `pnpm exec vitest run <package-relative-test-path>` there. From the root, use `pnpm --filter <name-from-package.json> <script>`.
 
-Copilot and webfetch's `pnpm test` watch; use `test:run` for one-shot execution. Local-llm has no test script; webfetch currently has no tests. Root tests include agent-plugins' local integration tests but exclude sandbox's native/RPC suites; see its guide for prerequisites.
+Copilot, digivolve, and webfetch's `pnpm test` watch; use `test:run` for one-shot execution. Local-llm has no test script; webfetch currently has no tests. Root tests include agent-plugins' local integration tests but exclude sandbox's native/RPC suites; see its guide for prerequisites.
 
 ## Shared constraints
 
