@@ -6,7 +6,7 @@
   "author": "Mike Wallio",
   "type": "module",
   "scripts": {
-    "build": "tsgo -p ./tsconfig.json",
+    "build": "tsrs -p ./tsconfig.json",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "lint": "oxlint -c ../../.oxlintrc.json --tsconfig ./tsconfig.json ./extensions/*.ts ./extensions/**/*.ts",
@@ -23,8 +23,8 @@
     "@earendil-works/pi-tui": "catalog:pi",
     "@types/node": "catalog:types",
     "@types/turndown": "catalog:types",
-    "@typescript/native-preview": "catalog:typescript",
     "oxfmt": "catalog:lint",
+    "tsrs": "catalog:typescript",
     "typebox": "catalog:runtime",
     "vitest": "catalog:test"
   },

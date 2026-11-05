@@ -10,7 +10,7 @@
   "author": "Mike Wallio",
   "type": "module",
   "scripts": {
-    "build": "tsgo -p ./tsconfig.json",
+    "build": "tsrs -p ./tsconfig.json",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "lint": "oxlint -c ../../.oxlintrc.json --tsconfig ./tsconfig.json src/*.ts",
@@ -24,8 +24,8 @@
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "catalog:pi",
     "@types/node": "catalog:types",
-    "@typescript/native-preview": "catalog:typescript",
     "oxfmt": "catalog:lint",
+    "tsrs": "catalog:typescript",
     "typebox": "catalog:runtime",
     "vitest": "catalog:test"
   },

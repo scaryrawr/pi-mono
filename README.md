@@ -46,7 +46,9 @@ pnpm check
 ```
 
 `pnpm check` runs type checks, lint, formatting checks, and available tests.
-`pnpm build` type-checks without emitting JavaScript.
+`pnpm build` type-checks with [tsrs](https://www.npmjs.com/package/tsrs) without
+emitting JavaScript. Package tsconfigs retain their existing strictness settings;
+tsrs runs in its default compatibility mode (without `--fast`).
 
 | Command          | What it runs                                              |
 | ---------------- | --------------------------------------------------------- |
@@ -98,7 +100,7 @@ Package dependencies and dev dependencies reference them with `catalog:<group>`:
 | `pi`         | Pi host packages                |
 | `lint`       | Oxlint, Oxfmt, and lint plugins |
 | `types`      | TypeScript type declarations    |
-| `typescript` | TypeScript compiler             |
+| `typescript` | tsrs TypeScript type checker    |
 | `test`       | Test runner                     |
 | `runtime`    | Runtime libraries and SDKs      |
 

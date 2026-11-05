@@ -15,7 +15,7 @@
     "./extensions/osaurus": "./extensions/osaurus.ts"
   },
   "scripts": {
-    "build": "tsgo -p tsconfig.json",
+    "build": "tsrs -p tsconfig.json",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "lint": "oxlint -c ../../.oxlintrc.json --tsconfig ./tsconfig.json extensions/*.ts",
@@ -25,8 +25,8 @@
     "@earendil-works/pi-coding-agent": "catalog:pi",
     "@earendil-works/pi-tui": "catalog:pi",
     "@types/node": "catalog:types",
-    "@typescript/native-preview": "catalog:typescript",
     "oxfmt": "catalog:lint",
+    "tsrs": "catalog:typescript",
     "typebox": "catalog:runtime"
   },
   "peerDependencies": {
