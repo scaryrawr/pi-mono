@@ -8,19 +8,19 @@ A single pi extension (`@earendil-works/pi-coding-agent`) that registers GitHub 
 
 ## Commands
 
-Always run these from the repo root:
+Run these from this package directory, or use `pnpm --filter pi-copilot <script>` from the monorepo root. Install dependencies from the monorepo root.
 
-| Task       | Command                                                  |
-| ---------- | -------------------------------------------------------- |
-| Type-check | `npm run build` (uses `tsgo`, `noEmit`)                  |
-| Format     | `npm run fmt` (write) / `npm run fmt:check` (verify)     |
-| Lint       | `npm run lint` (oxlint, type-aware) / `npm run lint:fix` |
-| Tests      | `npm test -- --run` (plain `npm test` starts watch mode) |
-| Smoke test | `pi --list-models github-copilot`                        |
+| Task       | Command                                               |
+| ---------- | ----------------------------------------------------- |
+| Type-check | `pnpm build` (uses `tsgo`, `noEmit`)                  |
+| Format     | `pnpm fmt` (write) / `pnpm fmt:check` (verify)        |
+| Lint       | `pnpm lint` (oxlint, type-aware) / `pnpm lint:fix`    |
+| Tests      | `pnpm test:run` (plain `pnpm test` starts watch mode) |
+| Smoke test | `pi --list-models github-copilot`                     |
 
-Before declaring work done, run `npm run fmt:check && npm run lint && npm run build`. Tests should pass if any exist that cover the touched area.
+Before declaring work done, run `pnpm fmt:check && pnpm lint && pnpm build && pnpm test:run`.
 
-When upgrading tooling, `oxlint` declares an optional `oxlint-tsgolint` peer (currently `>=7.0.2001`, versioned independently of `oxlint` itself). Bump the two together and reinstall; a version outside that range fails `npm install` with `ERESOLVE` and breaks the type-aware `npm run lint`. Check the peer range in `node_modules/oxlint/package.json` instead of guessing from the oxlint version.
+Oxlint, its type-aware peer, and the shared Anti-Slop rules are owned by the monorepo root (`.oxlintrc.json` and `tools/oxlint/anti-slop/`). Do not add package-local copies. When upgrading tooling, update the `oxlint` and `oxlint-tsgolint` catalog entries together and reinstall from the root. Check the peer range in the monorepo root's `node_modules/oxlint/package.json` instead of guessing from the oxlint version.
 
 ## Architecture
 
@@ -66,7 +66,7 @@ Two refresh rules that are easy to break (pi 1.0.0 model runtime):
 
 Mirroring upstream pi: Copilot authentication, login, and model-policy enabling live in pi's built-in `github-copilot` provider (`packages/ai`). When upstream changes how it calls `/models` (headers, payload fields, availability rules), update the matching constant/schema/helper here in the same change — this repo duplicates only the request and projection, never the OAuth flow.
 
-Pi development dependencies are pinned to the published `1.0.0` packages to match the installed host. Keep host-provided modules in wildcard peer dependencies and use exact published versions for local development checks. Pi's built-in provider owns curated model catalogs, thinking levels, compatibility flags, and sampling defaults; preserve those fields when projecting account-specific models.
+Pi development dependency versions are pinned in the monorepo's `pnpm-workspace.yaml` `pi` catalog; use `catalog:pi` for Pi dev dependencies and the corresponding named catalog for other dependencies. Keep host-provided modules in wildcard peer dependencies rather than coupling compatibility ranges to the development version. Pi's built-in provider owns curated model catalogs, thinking levels, compatibility flags, and sampling defaults; preserve those fields when projecting account-specific models.
 
 ## Safety / review notes
 

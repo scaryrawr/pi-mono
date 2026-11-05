@@ -6,15 +6,13 @@ Run the current required validation pipeline for this extension package.
 
 ## Steps
 
-1. Run `npm run build` — TypeScript must produce zero errors.
-2. Run `npm run lint` — oxlint with type-aware checking must be clean.
-3. Run `npm run fmt:check` — formatting/import sorting must already be correct.
-4. If Vitest test files exist (`*.test.ts` or `*.spec.ts`), run `npm test -- --run`.
+Run commands from this package directory, or use `pnpm --filter pi-webfetch <script>` from the monorepo root.
 
-## Note
-
-`npm test -- --run` currently exits 1 because the repository has no test files. Do not report that as a regression unless tests have been added and still fail.
+1. Run `pnpm build` — TypeScript must produce zero errors.
+2. Run `pnpm lint` — oxlint with type-aware checking must be clean.
+3. Run `pnpm fmt:check` — formatting/import sorting must already be correct.
+4. Run `pnpm test:run` — Vitest runs once; no test files is currently allowed for this package.
 
 ## Exit condition
 
-The first three commands complete with exit code 0; Vitest also passes when test files are present.
+All four commands complete with exit code 0.

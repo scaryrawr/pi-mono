@@ -9,25 +9,24 @@
     "build": "tsgo -p ./tsconfig.json",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
-    "lint": "oxlint -c .oxlintrc.json --tsconfig ./tsconfig.json ./extensions/*.ts ./extensions/**/*.ts",
-    "lint:fix": "oxlint -c .oxlintrc.json --fix --tsconfig ./tsconfig.json ./extensions/*.ts ./extensions/**/*.ts",
-    "test": "vitest"
+    "lint": "oxlint -c ../../.oxlintrc.json --tsconfig ./tsconfig.json ./extensions/*.ts ./extensions/**/*.ts",
+    "lint:fix": "oxlint -c ../../.oxlintrc.json --fix --tsconfig ./tsconfig.json ./extensions/*.ts ./extensions/**/*.ts",
+    "test": "vitest",
+    "test:run": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@oxlint/plugins": "1.86.0",
-    "turndown": "^7.2.4"
+    "turndown": "catalog:runtime"
   },
   "devDependencies": {
-    "@earendil-works/pi-ai": "1.3.0",
-    "@earendil-works/pi-coding-agent": "1.3.0",
-    "@earendil-works/pi-tui": "1.3.0",
-    "@types/turndown": "^5.0.6",
-    "@typescript/native-preview": "^7.0.0-dev.20260707.2",
-    "oxfmt": "^0.71.0",
-    "oxlint": "^1.86.0",
-    "oxlint-tsgolint": "^7.0.2003",
-    "typebox": "^1.3.34",
-    "vitest": "^5.0.3"
+    "@earendil-works/pi-ai": "catalog:pi",
+    "@earendil-works/pi-coding-agent": "catalog:pi",
+    "@earendil-works/pi-tui": "catalog:pi",
+    "@types/node": "catalog:types",
+    "@types/turndown": "catalog:types",
+    "@typescript/native-preview": "catalog:typescript",
+    "oxfmt": "catalog:lint",
+    "typebox": "catalog:runtime",
+    "vitest": "catalog:test"
   },
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",

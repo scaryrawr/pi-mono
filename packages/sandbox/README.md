@@ -8,14 +8,14 @@ This is bash sandboxing, not isolation of the entire agent. Pi's `read`, `write`
 
 MXC requires Node.js 24 or later. Its npm package includes native runtime assets.
 
-For a local checkout:
+For a local monorepo checkout, run from the monorepo root:
 
 ```bash
-npm install --ignore-scripts
-pi -e ./extensions/mxc.ts
+pnpm install --frozen-lockfile
+pi -e ./packages/sandbox/extensions/mxc.ts
 ```
 
-To keep the extension enabled across sessions, run `pi install /absolute/path/to/pi-mxc` after installing dependencies in the checkout. This scaffold is not published to npm.
+To keep the extension enabled across sessions, run `pi install /absolute/path/to/pi-mono/packages/sandbox` after installing dependencies in the checkout. This scaffold is not published to npm.
 
 Run `/sandbox init` in pi to create `<agentDir>/pi-mxc.json`. The default location is `~/.pi/agent/pi-mxc.json`. Pi's `PI_CODING_AGENT_DIR` override is supported.
 
@@ -100,17 +100,19 @@ The Node SDK's [V1 reference](https://github.com/microsoft/mxc/tree/main/docs/ap
 
 ## Develop and verify
 
+From the monorepo root:
+
 ```bash
-npm ci --ignore-scripts
-npm run check
-npm run test:integration
-npm run test:rpc
+pnpm install --frozen-lockfile
+pnpm --filter pi-mxc check
+pnpm --filter pi-mxc test:integration
+pnpm --filter pi-mxc test:rpc
 ```
 
-`check` runs TypeScript native preview, type-aware Oxlint with the sibling extensions' vendored Anti-Slop rules, Oxfmt, and unit tests. `test:integration` runs actual MXC workloads and requires a usable native backend. It does not skip missing prerequisites. The live tests use Unix bash and `/usr/bin/curl`, so run them on macOS or Linux.
+`check` runs TypeScript native preview, the monorepo root's shared type-aware Oxlint and Anti-Slop rules, Oxfmt, and unit tests. `test:integration` runs actual MXC workloads and requires a usable native backend. It does not skip missing prerequisites. The live tests use Unix bash and `/usr/bin/curl`, so run them on macOS or Linux.
 
 The integration suite checks host Node execution, linked tool runtimes and read-only enforcement, a local Git workflow, host Git identity, read-only global config, private temporary storage, allowed and denied filesystem operations, symlink containment, environment isolation, loopback networking, shell quoting, exit status, timeout, and cancellation. It does not certify every backend or policy combination.
 
-`test:rpc` requires Python 3 and an installed `pi` command. It starts an isolated pi instance with a temporary agent directory, drives `/sandbox` commands and the JSON editor, and checks actual config files, session-switch cleanup, and native user-bash execution. It makes no model calls. Inside an existing sandbox, use `npm run test:rpc -- --commands-only` to verify policy commands without launching nested native sandboxes.
+`test:rpc` requires Python 3 and an installed `pi` command. It starts an isolated pi instance with a temporary agent directory, drives `/sandbox` commands and the JSON editor, and checks actual config files, session-switch cleanup, and native user-bash execution. It makes no model calls. Inside an existing sandbox, use `pnpm --filter pi-mxc test:rpc --commands-only` to verify policy commands without launching nested native sandboxes.
 
 [Design notes](docs/design.md) explain the integration boundaries and follow-up work.

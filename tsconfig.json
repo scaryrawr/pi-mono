@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "lib": ["ES2024"],
+    "module": "NodeNext",
+    "target": "ES2024",
+    "noEmit": true,
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["tools/oxlint/anti-slop.test.ts"]
+}

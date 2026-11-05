@@ -1,0 +1,29 @@
+{
+  "name": "pi-mono",
+  "version": "0.0.0",
+  "private": true,
+  "description": "pi monorepo — workspace root",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "fmt": "oxfmt package.json pnpm-workspace.yaml .oxlintrc.json tsconfig.json README.md tools/oxlint/anti-slop.test.ts tools/oxlint/anti-slop/UPSTREAM.md && pnpm -r run fmt",
+    "fmt:check": "oxfmt --check package.json pnpm-workspace.yaml .oxlintrc.json tsconfig.json README.md tools/oxlint/anti-slop.test.ts tools/oxlint/anti-slop/UPSTREAM.md && pnpm -r run fmt:check",
+    "lint": "oxlint packages tools/oxlint",
+    "lint:fix": "oxlint --fix packages tools/oxlint",
+    "test": "pnpm test:lint && pnpm -r --if-present run test:run",
+    "test:lint": "vitest run tools/oxlint/anti-slop.test.ts",
+    "check": "pnpm build && pnpm lint && pnpm fmt:check && pnpm test"
+  },
+  "devDependencies": {
+    "@oxlint/plugins": "catalog:lint",
+    "@types/node": "catalog:types",
+    "oxfmt": "catalog:lint",
+    "oxlint": "catalog:lint",
+    "oxlint-tsgolint": "catalog:lint",
+    "vitest": "catalog:test"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "packageManager": "pnpm@12.16.1"
+}

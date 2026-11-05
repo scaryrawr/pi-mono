@@ -26,9 +26,10 @@ There are no tests — this is a small plugin. Focus on correctness, clean code,
 - **Error handling**: wrap `fetch` calls in `try/catch`, return `undefined` on failure. Extensions silently skip registration if the provider is unavailable.
 - **API key defaults**: use low-security placeholder values (`"ollama"`, `"lmstudio"`, `"omlx"`, `"osaurus"`, `"geniex"`) — matching existing style. Base URL and context length defaults are per-provider constants in each extension.
 - **Model mapping**: always map provider model metadata to the pi `ProviderModel` interface with `reasoning: false` for Ollama/Osaurus, `reasoning: true` for LM Studio/OMLX/GenieX (matching current code).
-- **Format/lint**: `npm run fmt`, `npm run fmt:check`, `npm run lint`, `npm run lint:fix`. No test command exists.
-- **Lint dependencies**: when upgrading `oxlint`, update `oxlint-tsgolint` to satisfy the version declared by `oxlint`'s optional peer dependency; mismatched versions cause npm `ERESOLVE` failures.
-- **Build**: `npm run build` (tsgo type-check only, no emit).
+- **Workspace**: install dependencies from the monorepo root. Run package commands from this directory, or use `pnpm --filter pi-local-llm <script>` from the root. Dependency versions belong in the named catalogs in `pnpm-workspace.yaml`; use `catalog:<group>` in dev dependencies and preserve host peer compatibility ranges.
+- **Format/lint**: `pnpm fmt`, `pnpm fmt:check`, `pnpm lint`, `pnpm lint:fix`. No test command exists.
+- **Lint tooling**: the monorepo root owns Oxlint dependencies, `.oxlintrc.json`, and the vendored `tools/oxlint/anti-slop/` rules. Do not duplicate them in packages. When upgrading `oxlint`, update the `oxlint-tsgolint` catalog entry to satisfy its optional peer dependency.
+- **Build**: `pnpm build` (tsgo type-check only, no emit).
 
 ## Safety
 

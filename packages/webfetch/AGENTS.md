@@ -8,15 +8,17 @@ This is a pi coding-agent extension package. `package.json` loads the extension 
 
 ## Build, Test, and Development Commands
 
-- `npm run build` — TypeScript check with `tsgo -p ./tsconfig.json`; this must pass before handoff.
-- `npm run lint` — `oxlint` with type-aware checking over `extensions/**/*.ts`.
-- `npm run fmt:check` — verify formatting/import sorting; use `npm run fmt` to rewrite formatting.
-- `npm run lint:fix` — auto-fix supported lint issues.
-- `npm test -- --run` — Vitest. There are currently no test files, so this exits 1 until tests are added; do not treat that as a repo regression.
+Install dependencies from the monorepo root. Run these from this package directory, or use `pnpm --filter pi-webfetch <script>` from the root. Dependency versions belong in the named catalogs in `pnpm-workspace.yaml`; package dependencies and dev dependencies use `catalog:<group>`, while host peer compatibility ranges remain literal.
 
-`oxlint` declares an optional `oxlint-tsgolint` peer (currently `>=7.0.2001`, versioned independently of `oxlint`) that powers the type-aware rules used above. Bump both in the same change and reinstall; a version outside the peer range fails `npm install` with `ERESOLVE`. Read the peer range in `node_modules/oxlint/package.json` instead of guessing it from the oxlint version.
+- `pnpm build` — TypeScript check with `tsgo -p ./tsconfig.json`; this must pass before handoff.
+- `pnpm lint` — `oxlint` with type-aware checking over `extensions/**/*.ts`.
+- `pnpm fmt:check` — verify formatting/import sorting; use `pnpm fmt` to rewrite formatting.
+- `pnpm lint:fix` — auto-fix supported lint issues.
+- `pnpm test:run` — one-shot Vitest with `--passWithNoTests` because this package currently has no test files. Plain `pnpm test` starts watch mode.
 
-Use `npm run build && npm run lint && npm run fmt:check` as the current required validation path.
+The monorepo root owns Oxlint dependencies, `.oxlintrc.json`, and the vendored `tools/oxlint/anti-slop/` rules. Do not duplicate them in packages. `oxlint` declares an optional `oxlint-tsgolint` peer that powers type-aware rules; update both catalog entries together and reinstall from the root. Read the peer range in the root's `node_modules/oxlint/package.json` instead of guessing it from the oxlint version.
+
+Use `pnpm build && pnpm lint && pnpm fmt:check && pnpm test:run` as the current required validation path.
 
 ## Coding Style & Naming Conventions
 
@@ -26,7 +28,7 @@ Use `camelCase` for functions and `PascalCase` for exported types/classes. Keep 
 
 ## Testing Guidelines
 
-If you add tests, use Vitest naming that its defaults discover (`*.test.ts` or `*.spec.ts`) and then include `npm test -- --run` in validation. Prefer exported pure helpers over network-dependent tests.
+If you add tests, use Vitest naming that its defaults discover (`*.test.ts` or `*.spec.ts`) and include `pnpm test:run` in validation. Prefer exported pure helpers over network-dependent tests.
 
 ## Security & Agent-Specific Instructions
 

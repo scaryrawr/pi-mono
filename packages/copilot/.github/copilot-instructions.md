@@ -6,7 +6,7 @@ See [`AGENTS.md`](../AGENTS.md) for shared architecture, commands, and conventio
 
 - This project is itself a GitHub Copilot provider for pi. When editing it, you are not editing your own Copilot configuration — you are editing an extension that pi loads to register `github-copilot` as a model provider.
 - Prefer small, focused diffs that stay within the module boundaries described in `AGENTS.md` (`api`, `cache`, `credentials`, `inference`, `mapping`, `state`, `types`, `constants`).
-- When suggesting completions in `extensions/copilot/*`, respect `exactOptionalPropertyTypes`: never assign `undefined` to an optional property; use the conditional-spread pattern already established in `mapping.ts`.
+- When suggesting completions in `extensions/copilot/*`, respect `exactOptionalPropertyTypes`: never assign `undefined` to an optional property; assign optional fields behind explicit guards, as described in `AGENTS.md`. The shared Anti-Slop rules reject conditional empty-object spreads.
 - Relative imports must end in `.js` (NodeNext). Type-only imports must use `import type` or `import { type X }` because `verbatimModuleSyntax` is on.
 
 ## Validation Copilot should suggest
@@ -14,7 +14,7 @@ See [`AGENTS.md`](../AGENTS.md) for shared architecture, commands, and conventio
 After non-trivial edits, suggest running:
 
 ```
-npm run fmt:check && npm run lint && npm run build
+pnpm fmt:check && pnpm lint && pnpm build && pnpm test:run
 ```
 
-For changes scoped to one module, a narrower check is `npm run lint -- extensions/copilot/<file>.ts`.
+Run these from the package directory, or use `pnpm --filter pi-copilot <script>` from the monorepo root.

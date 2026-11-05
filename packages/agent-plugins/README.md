@@ -141,12 +141,14 @@ Hook processes receive `PLUGIN_ROOT`, `PLUGIN_DATA`, `COPILOT_PLUGIN_ROOT/DATA`,
 
 ## Development
 
+Install dependencies from the monorepo root, then run package commands:
+
 ```sh
-npm install
-npm run build
-npm run lint
-npm run test
-npm run fmt:check
+pnpm install --frozen-lockfile
+pnpm --filter pi-agent-plugins build
+pnpm --filter pi-agent-plugins lint
+pnpm --filter pi-agent-plugins test
+pnpm --filter pi-agent-plugins fmt:check
 ```
 
-`npm install` requires access to the configured npm registry. There are no Git dependencies or bundled MCP transports.
+`pnpm install` requires access to the configured npm registry. There are no Git dependencies or bundled MCP transports. Shared versions are managed in the workspace catalog; see the [monorepo development guide](../../README.md#development).

@@ -14,14 +14,16 @@ pi install git:github.com/scaryrawr/pi-copilot
 
 ### Development
 
-If you are a developer working on this extension, you can run the following commands:
+Install dependencies with `pnpm install --frozen-lockfile` from the monorepo root.
+Run the following from this package directory, or use `pnpm --filter pi-copilot <script>` from the root:
 
-| Task       | Command         |
-| ---------- | --------------- |
-| Type-check | `npm run build` |
-| Format     | `npm run fmt`   |
-| Lint       | `npm run lint`  |
-| Test       | `npm test`      |
+| Task        | Command         |
+| ----------- | --------------- |
+| Type-check  | `pnpm build`    |
+| Format      | `pnpm fmt`      |
+| Lint        | `pnpm lint`     |
+| Test        | `pnpm test:run` |
+| Watch tests | `pnpm test`     |
 
 ## Architecture
 
