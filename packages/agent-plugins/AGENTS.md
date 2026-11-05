@@ -1,7 +1,19 @@
-# pi-agent-plugins
+# Agent plugins
 
-This TypeScript/ESM pi extension loads explicitly configured Agent Plugins 1.0.0 directories. Keep portable manifest/skill discovery and path containment in `src/plugin.ts`, config and trust handling in `src/config.ts`, pi lifecycle/registration cleanup in `src/index.ts`, and portable MCP validation/adaptation in `src/mcp.ts`. Pi 0.99.1+ owns MCP transports, OAuth and discovery through `pi.registerMcpServer`; do not reintroduce `pi-mcp` or `pi-dynamic-tools` dependencies. Use `deferred` exposure and built-in `tool_search`. Escape Pi's config-value syntax in portable env/headers so literal values cannot become shell commands or arbitrary environment references. Do not treat portable `prompts/` as a v1 component: the pi-only path is `com.scaryrawr.pi/prompts/`.
+## Ownership and portable contracts
 
-Run `pnpm build && pnpm lint && pnpm test && pnpm fmt:check` from this package directory for changes, or `pnpm --filter pi-agent-plugins <script>` from the monorepo root. Install dependencies from the monorepo root; versions belong in `pnpm-workspace.yaml` and package manifests use `catalog:<group>` references to its named catalogs. Use `.js` relative TypeScript imports and update README examples when configuration behavior changes. Keep independent component failures isolated, and never follow package paths outside the real plugin root. `src/mcp-integration.test.ts` exercises native MCP and tool search against a real local stdio peer; keep its agent directory isolated and emit `session_shutdown` before disposal.
+Keep portable discovery and containment in `src/plugin.ts`, configuration/trust in `src/config.ts`, lifecycle cleanup in `src/index.ts`, and MCP adaptation in `src/mcp.ts`.
 
-Lint uses the monorepo root's `.oxlintrc.json` and `tools/oxlint/anti-slop/` rules. Do not add package-local copies or weaken rules to accommodate unparsed input; validate external data at its boundary and preserve precise internal types.
+Implement Agent Plugins 1.0.0, not legacy dialects by accident. Portable `prompts/` is not a v1 component; Pi prompts live under `com.scaryrawr.pi/prompts/`. Update README configuration examples when behavior changes.
+
+Resolve paths against the canonical plugin root and reject escapes, including symlinks. Isolate independent component failures so one bad component does not disable valid siblings. Only load project configuration when trusted; configuration UI writes remain global.
+
+## MCP and hooks
+
+Pi owns MCP transports, OAuth, and discovery through `pi.registerMcpServer`; do not reintroduce `pi-mcp` or `pi-dynamic-tools`. Keep deferred exposure and built-in `tool_search`. Escape Pi's config-value syntax in portable environment/header values so literals cannot become shell commands or arbitrary environment references.
+
+Preserve explicit hook trust and dialect-specific decisions. Validate hook argument replacements and keep output/context bounded. Clean up registrations, subprocesses, and cancellation listeners on shutdown.
+
+## Tests
+
+Use the root command inventory. The ordinary suite includes native MCP and hook integration tests using local subprocesses and real Pi sessions. Isolate their agent directories and emit `session_shutdown` before disposing sessions.

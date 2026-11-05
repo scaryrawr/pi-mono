@@ -1,75 +1,25 @@
-# AGENTS.md
+# Copilot provider
 
-Shared guidance for agents working in `pi-copilot`. Keep changes minimal, typed, and consistent with the conventions below.
+`extensions/copilot.ts` projects account-specific `/models` data over Pi's built-in `github-copilot` provider. Pi owns OAuth and credential persistence; this extension owns discovery and projection, not a separate login implementation.
 
-## What this repo is
+## Lifecycle
 
-A single pi extension (`@earendil-works/pi-coding-agent`) that registers GitHub Copilot as a model provider. It wires GitHub's OAuth flow into pi, fetches the user's `/models` payload, and projects it into pi's `Model` / `ProviderModelConfig` shapes. There is no runtime server — the extension is consumed by pi via the `pi.extensions` field in `package.json`.
+Bootstrap from cache without adding uncached network work. Keep model discovery outside OAuth callbacks: Pi resolves credentials under a cross-process auth lock. `refreshModels` performs provider refresh; `session_start` is the fallback.
 
-## Commands
+Do not call `pi.registerProvider` inside `refreshModels`: re-registration invalidates the in-flight publication and queues another refresh. Return the projected list for Pi to publish. Preserve curated fallback when no usable models remain, including the non-OAuth branch, rather than deliberately publishing an empty catalog.
 
-Run these from this package directory, or use `pnpm --filter pi-copilot <script>` from the monorepo root. Install dependencies from the monorepo root.
+Auth, network, cache, and malformed-store failures must not break Pi startup. Enterprise domains are optional. Never log `auth.json`, `copilot-models.json`, or `models-store.json` contents.
 
-| Task       | Command                                               |
-| ---------- | ----------------------------------------------------- |
-| Type-check | `pnpm build` (uses `tsgo`, `noEmit`)                  |
-| Format     | `pnpm fmt` (write) / `pnpm fmt:check` (verify)        |
-| Lint       | `pnpm lint` (oxlint, type-aware) / `pnpm lint:fix`    |
-| Tests      | `pnpm test:run` (plain `pnpm test` starts watch mode) |
-| Smoke test | `pi --list-models github-copilot`                     |
+## Projection and validation
 
-Before declaring work done, run `pnpm fmt:check && pnpm lint && pnpm build && pnpm test:run`.
+Keep schemas/parser in `extensions/copilot/types.ts`, capability inference in `inference.ts`, projection in `mapping.ts`, and live provider mutation in `state.ts`.
 
-Oxlint, its type-aware peer, and the shared Anti-Slop rules are owned by the monorepo root (`.oxlintrc.json` and `tools/oxlint/anti-slop/`). Do not add package-local copies. When upgrading tooling, update the `oxlint` and `oxlint-tsgolint` catalog entries together and reinstall from the root. Check the peer range in the monorepo root's `node_modules/oxlint/package.json` instead of guessing from the oxlint version.
+For usable payloads, apply picker, policy, and tool-support availability rules before projecting models. Preserve existing curated API, reasoning, input, pricing, compatibility, and sampling metadata where the mapping currently gives it precedence; API names and updated limits have their own precedence. Do not retain missing models merely to preserve metadata; distinguish this from whole-catalog fallback.
 
-## Architecture
+For a new capability, update schema, inference, mapping, and any compatibility constants together. Prefer explicit capability flags over endpoint/id heuristics. Change Copilot request headers only deliberately; they affect endpoint compatibility.
 
-Entry point: `extensions/copilot.ts`. It composes everything in `extensions/copilot/*` into one `ProviderConfig` and calls `pi.registerProvider("github-copilot", ...)`.
+Parse model responses through `ModelResponseParser`; use the owning TypeBox schemas for auth, cache, and model-store boundaries. Preserve top-of-file module-role docblocks when adding modules.
 
-Module boundaries (keep these crisp; do not cross-import sideways more than needed):
+## Tests
 
-- `constants.ts` — headers, URLs, cache paths, compat flag bundles, `ZERO_COST`. Pure values, no logic.
-- `types.ts` — TypeBox schemas + derived types for the `/models` payload and cache entry. Owns the single `ModelResponseParser` (`Compile(Models)`).
-- `cache.ts` — best-effort 24h on-disk cache of the `/models` response. All errors are swallowed.
-- `compat.ts` — Copilot endpoint/domain helpers (proxy-token → API base URL, enterprise domain normalization). Keep this free of catalog/auth concerns; `catalog.ts` and `credentials.ts` own those.
-- `catalog.ts` — reads pi's curated Copilot catalog: built-in models via `@earendil-works/pi-ai/providers/all` plus the dynamic overlay pi persists in `models-store.json` (overlay wins). Best-effort; failures yield fewer models.
-- `credentials.ts` — reads `auth.json` from `getAgentDir()`, extracts the optional enterprise domain. Tolerates malformed input.
-- `api.ts` — `fetchCopilotModels()`: cache-first fetch of `/models` with Copilot's required headers, bounded retries on HTTP 429, and caller-signal cancellation. Returns `undefined` on any failure.
-- `inference.ts` — capability inference (api flavor, reasoning, vision, cost, image input limits, compat) plus `enabledCopilotModels(payload, policyFallback)`, which mirrors Copilot's own availability rules (tool-call support, picker enabled, policy not `disabled`, policy `enabled` fallback). Order of preference: explicit capability flags → endpoint list → id heuristics. `inferCost` converts `billing.token_prices.default` (cents per million tokens) to pi's per-million `cost`; `inferInputLimits` maps `capabilities.limits.vision` onto `inputLimits.images`.
-- `mapping.ts` — translates Copilot API entries to pi `Model` / `ProviderModelConfig`. The `/models` payload is authoritative for availability: Copilot models absent from the payload, disabled in the picker, disabled by policy, or missing tool-call support are dropped, while entries that are present still **preserve any pre-existing curated fields for the same model id** (supplied by the caller, normally `loadCuratedCopilotModels()`).
-- `state.ts` — `createCopilotState(providerConfig)`: owns the mutable `/models` payload and reprojects it onto the live `ProviderConfig` during provider refresh and bootstrap.
-
-Lifecycle: the extension inherits pi's built-in GitHub Copilot OAuth implementation. Bootstrap seeds the model list from cache; pi's `refreshModels` provider hook refreshes account-specific models after credential resolution; `session_start` remains a fallback refresh path. Keep discovery outside OAuth callbacks because pi refreshes credentials under a cross-process auth lock.
-
-Two refresh rules that are easy to break (pi 1.0.0 model runtime):
-
-- `ProviderConfig.refreshModels` **must never return `[]`**. pi publishes the returned list as the provider's whole catalog, so an empty result deletes every Copilot model until the next refresh. Re-project (curated fallback) and return that instead. The same applies to the non-OAuth (API-key) branch.
-- Do **not** call `pi.registerProvider` from inside `refreshModels`. Re-registration bumps pi's generation-checked publication, so the in-flight `context.publish()` is rejected and the refreshed list is dropped; it also queues a nested refresh. Return the list and let pi publish it. Register outside a refresh (bootstrap, `session_start`).
-
-## Conventions
-
-- **TypeScript:** strict mode with `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`, and `verbatimModuleSyntax`. When forwarding an optional field, build the object with the required fields first and assign the optional field behind an `!== undefined` guard; do **not** use conditional empty-object spreads (`...(x !== undefined ? { x } : {})`) — the vendored anti-slop oxlint plugin rejects them. See `toCopilotModel` for the established pattern.
-- **ESM:** all relative imports use the `.js` extension (NodeNext module resolution); type-only imports use `import type` or `import { type X }` because of `verbatimModuleSyntax`.
-- **Runtime validation:** parse external payloads through the pre-compiled `ModelResponseParser` and validate other external input (auth file, models store, cache) with `Value.Check` against TypeBox schemas in the owning module. Do not hand-roll `typeof`/`as` shape checks.
-- **Tests:** no module mocking — `vi.mock` is rejected by the vendored anti-slop plugin. Redirect the agent directory with `PI_CODING_AGENT_DIR` (set it before dynamically importing the modules under test) and stub network at the global `fetch` seam with `vi.stubGlobal("fetch", ...)`.
-- **Failure mode:** auth, network, and cache paths should swallow errors and return `undefined` rather than throw. Extension bootstrap must never break pi startup.
-- **Curated-field preservation:** when remapping Copilot entries to pi models, start from `enabledCopilotModels(payload)` and look up an existing model only for those returned ids. Prefer the existing model's `api`, `name`, `reasoning`, `input`, `cost`, `promptCache`, `headers`, `compat`, and `thinkingLevelMap`; refresh only `contextWindow` / `maxTokens` from the latest payload (with fallbacks via `positiveNumber`). Never carry over Copilot models that are missing from the payload just to preserve curated fields.
-- **Copilot headers:** `COPILOT_HEADERS` mirrors the official VS Code extension and `COPILOT_API_VERSION` matches what pi's built-in Copilot client sends. Do not change the User-Agent / Editor-Version / Copilot-Integration-Id / X-GitHub-Api-Version strings without a deliberate reason — Copilot gates on these.
-- **Comments:** every module has a top-of-file docblock describing its role. Match that style for new modules; keep inline comments focused on "why", not "what".
-
-## Adding a new capability
-
-1. If Copilot exposes a new capability flag, extend `SupportsSchema` (or the `policy` schema) in `types.ts` first so the parser tolerates it.
-2. Add inference helpers in `inference.ts` (prefer explicit flags over heuristics).
-3. Wire the result through `toCopilotModel` in `mapping.ts`, remembering to preserve existing values when present.
-4. If the capability requires new compat flags, add them to `constants.ts` and pick them up in `inferCompat`.
-
-Mirroring upstream pi: Copilot authentication, login, and model-policy enabling live in pi's built-in `github-copilot` provider (`packages/ai`). When upstream changes how it calls `/models` (headers, payload fields, availability rules), update the matching constant/schema/helper here in the same change — this repo duplicates only the request and projection, never the OAuth flow.
-
-Pi development dependency versions are pinned in the monorepo's `pnpm-workspace.yaml` `pi` catalog; use `catalog:pi` for Pi dev dependencies and the corresponding named catalog for other dependencies. Keep host-provided modules in wildcard peer dependencies rather than coupling compatibility ranges to the development version. Pi's built-in provider owns curated model catalogs, thinking levels, compatibility flags, and sampling defaults; preserve those fields when projecting account-specific models.
-
-## Safety / review notes
-
-- `auth.json`, `copilot-models.json`, and `models-store.json` live under `getAgentDir()`. Never log their contents.
-- The extension fetches over the network on every login/refresh. Don't add additional network calls to the bootstrap path without caching.
-- Don't introduce a hard dependency on enterprise URLs — they're optional and may be missing.
+Use the root validation commands. Set `PI_CODING_AGENT_DIR` before dynamically importing modules that capture paths. Stub global `fetch` with `vi.stubGlobal`, not module mocks; tests must not read real credentials or contact GitHub.

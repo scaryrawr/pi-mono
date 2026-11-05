@@ -1,37 +1,19 @@
-# pi-local-llm
+# Local model providers
 
-## Architecture
+## Entrypoints and configuration
 
-Single-purpose pi coding agent plugin exposing five local AI providers (Ollama, LM Studio, OMLX, Osaurus, GenieX). Each provider extension in `extensions/` follows an identical pattern:
+The five provider extensions discover models at startup. `extensions/local-ai.ts` owns `/local-ai`; `extensions/config.ts` is an exported helper, not a Pi extension entrypoint. Preserve both default extension exports and named library exports declared in `package.json`.
 
-1. Load the provider's settings from the shared config file via `extensions/config.ts`
-2. Return early (no registration) only when the provider is explicitly disabled in the config
-3. Fetch available models from the provider's API
-4. Call `pi.registerProvider()` to register each model with the pi agent SDK
+Use explicit `.ts` relative imports in this package, unlike the rest of the workspace; its tsconfig enables `allowImportingTsExtensions`.
 
-`extensions/local-ai.ts` is the one non-provider extension: it registers the `/local-ai` command, an interactive multi-select list (up/down navigate, space toggle, enter save, esc cancel) for opting out by disabling each provider's `enabled` flag in the shared config via `setProviderEnabled()`. Toggles take effect at the next pi start, since providers register at startup.
+Keep provider settings in `<agentDir>/pi-local-llm.json`, resolved through Pi's `getAgentDir()` and `PI_CODING_AGENT_DIR`. Add settings to the TypeBox boundary schema in `extensions/config.ts` and update `pi-local-llm.example.json`, not provider-specific environment variables.
 
-### Configuration
+Providers are enabled unless explicitly disabled. Missing or malformed configuration falls back to defaults. `/local-ai` persists opt-outs for the next startup; toggling a provider must preserve unrelated settings.
 
-All settings come from a single JSON config file at `<agentDir>/pi-local-llm.json` (default `~/.pi/agent/pi-local-llm.json`; pi's `getAgentDir()` honors the `PI_CODING_AGENT_DIR` override). There are no env vars for provider settings. Providers are **enabled by default**: a provider registers models unless its `enabled` field is explicitly `false` (opt-out). `pi-local-llm.example.json` shows the full schema. A missing or malformed config file is treated as defaults, so pi always starts cleanly.
+## Discovery behavior
 
-There are no tests — this is a small plugin. Focus on correctness, clean code, and matching existing patterns.
+Unavailable providers silently skip registration rather than failing Pi startup. Preserve provider-specific API shapes and model metadata instead of assuming every server is identical.
 
-## Conventions
+Defaults point at local servers, but configured base URLs need not be local. Never log configured API keys or expose them to the model. Keep placeholder API-key defaults and endpoint/context defaults in the corresponding provider module.
 
-- **TypeScript**: strict mode, ES2024, NodeNext module resolution.
-- **Naming**: file names are kebab-case (`extensions/ollama.ts`). Function names use PascalCase for types, camelCase for functions.
-- **Config**: shared config loading/validation lives in `extensions/config.ts` (`loadProviderConfig()`, plus `getLocalLlmConfigPath()` and `setProviderEnabled()` used by the `/local-ai` command). Config files are parsed at the boundary and validated with TypeBox schemas via `Value.Check`; the schema in `config.ts` is the single source of truth. The file is a helper module, not an extension entry. New provider settings go in the config file, never env vars. Invalid config values are dropped silently so extensions fall back to defaults. Relative imports use explicit `.ts` extensions (NodeNext + jiti; see `allowImportingTsExtensions` in tsconfig).
-- **Extension exports**: each extension uses both `export default` (for pi harness consumption) and a named export (e.g., `export { ollama }`) so the package is consumable as a library via the `exports` field in `package.json`.
-- **Error handling**: wrap `fetch` calls in `try/catch`, return `undefined` on failure. Extensions silently skip registration if the provider is unavailable.
-- **API key defaults**: use low-security placeholder values (`"ollama"`, `"lmstudio"`, `"omlx"`, `"osaurus"`, `"geniex"`) — matching existing style. Base URL and context length defaults are per-provider constants in each extension.
-- **Model mapping**: always map provider model metadata to the pi `ProviderModel` interface with `reasoning: false` for Ollama/Osaurus, `reasoning: true` for LM Studio/OMLX/GenieX (matching current code).
-- **Workspace**: install dependencies from the monorepo root. Run package commands from this directory, or use `pnpm --filter pi-local-llm <script>` from the root. Dependency versions belong in the named catalogs in `pnpm-workspace.yaml`; use `catalog:<group>` in dev dependencies and preserve host peer compatibility ranges.
-- **Format/lint**: `pnpm fmt`, `pnpm fmt:check`, `pnpm lint`, `pnpm lint:fix`. No test command exists.
-- **Lint tooling**: the monorepo root owns Oxlint dependencies, `.oxlintrc.json`, and the vendored `tools/oxlint/anti-slop/` rules. Do not duplicate them in packages. When upgrading `oxlint`, update the `oxlint-tsgolint` catalog entry to satisfy its optional peer dependency.
-- **Build**: `pnpm build` (tsgo type-check only, no emit).
-
-## Safety
-
-- All providers use local endpoints — no external API calls beyond the local model server.
-- API keys from the config file are never logged or exposed to the model.
+Use the root build/lint/format command inventory. This package currently has no test script.
