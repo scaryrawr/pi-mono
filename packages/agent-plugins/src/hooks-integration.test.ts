@@ -21,16 +21,23 @@ it("runs configured plugin hooks through a real Pi extension runtime", async () 
   try {
     const root = path.join(directory, "plugin");
     await mkdir(root);
-    await writeFile(path.join(root, "plugin.json"), '{"name":"policy"}');
+    await mkdir(path.join(root, "hooks"));
+    await writeFile(path.join(root, "plugin.json"), '{"name":"policy","hooks":"hooks/hooks.json"}');
     await writeFile(
-      path.join(root, "hooks.json"),
+      path.join(root, "hooks/guard.cjs"),
+      `process.stdout.write(JSON.stringify({permissionDecision:"deny",permissionDecisionReason:"integration policy"}));`,
+    );
+    await writeFile(
+      path.join(root, "hooks/hooks.json"),
       JSON.stringify({
         version: 1,
         hooks: {
           preToolUse: [
             {
               matcher: "bash",
-              bash: `printf '%s' '{"permissionDecision":"deny","permissionDecisionReason":"integration policy"}'`,
+              exec: process.execPath,
+              args: ["hooks/guard.cjs"],
+              cwd: "${PLUGIN_ROOT}",
             },
           ],
           userPromptTransformed: [

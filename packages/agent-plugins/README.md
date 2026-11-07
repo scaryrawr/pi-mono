@@ -38,9 +38,11 @@ A marketplace must contain `.github/plugin/marketplace.json`, as in [scarypilot]
 
 Only sources inside the real marketplace root are allowed. The loader skips remote sources and symlinks that escape that root. Each selected plugin needs a parseable root `plugin.json` with a valid `name`. If that file is absent, the loader checks `.codex-plugin/plugin.json`. An invalid primary manifest or one that escapes the root is rejected rather than bypassed through a fallback path.
 
-Skills load only from the plugin root's `skills/` directory. The loader does not use Codex interface metadata or custom skill component paths. It adapts plugin hooks as described below.
+Portable and Codex skills load only from the plugin root's `skills/` directory. For schema-less root Copilot manifests, `skills` accepts a relative directory path or an array of paths, such as `"skills": ["skills/"]` in ScaryPilot. These paths replace the default `skills/` location. Each directory contributes its immediate `<name>/SKILL.md` children. Paths and symlinks must remain inside the canonical plugin root, and duplicate files load once.
 
-For compatibility with marketplace packages, the loader treats a missing `$schema` as v1.0.0. It rejects an explicit schema other than the v1.0.0 URL and validates the other Agent Plugins v1 manifest fields. A marketplace failure does not prevent direct plugins or other entries from loading.
+The loader does not use Codex interface metadata. Copilot `agents` is recognized but skipped with an explicit warning because Pi has no native custom-agent loader. Agent files are not converted into skills or prompt templates. The loader adapts plugin hooks as described below.
+
+For compatibility with marketplace packages, the loader accepts a missing `$schema` and validates the core Agent Plugins v1 manifest fields. A schema-less root manifest also enables the Copilot skill-path compatibility described above. An explicit schema other than the v1.0.0 URL is rejected. A marketplace failure does not prevent direct plugins or other entries from loading.
 
 To add ScaryDex, run `/marketplaces`, choose "Add marketplace", and enter `https://github.com/scaryrawr/scarydex`. Then select the marketplace to enable individual plugins. If a failed add left a cached clone, retry the add. The loader reuses the clone and saves the config after validating the catalog.
 
@@ -104,7 +106,7 @@ Prompts are not a portable Agent Plugins v1 component. This extension loads dire
 
 The loader adapts [Copilot hooks](https://docs.github.com/en/copilot/reference/hooks-reference) and [Codex hooks](https://learn.chatgpt.com/docs/hooks), not repository or user hook settings from either application. Root `plugin.json` selects Copilot defaults, `hooks.json` and `hooks/hooks.json`. A `.codex-plugin/plugin.json` manifest selects Codex's default, `hooks/hooks.json`.
 
-A manifest `hooks` field replaces those defaults. It accepts a `./`-prefixed file path, an inline hooks object, or an array of either. Hook config files and symlinks must remain inside the real plugin root. The loader skips invalid files and handlers without disabling skills, prompts, MCP, or other hooks.
+A manifest `hooks` field replaces those defaults. It accepts a relative file path, an inline hooks object, or an array of either. Copilot paths can use `hooks/hooks.json` or `./hooks/hooks.json`; Codex paths must start with `./`. Absolute paths, paths that escape the plugin root, and escaping symlinks are rejected. The loader skips invalid files and handlers without disabling skills, prompts, MCP, or other hooks.
 
 Adding a direct plugin or enabling a marketplace plugin trusts its hook commands, including future edits and refreshes. This loader does not implement Codex's per-definition hash review, either application's sandbox, or enterprise policy enforcement. Commands run on the host with your permissions and can read prompts, tool arguments and results, and the Pi transcript. Review code before enabling it. To stop its hooks, disable the plugin and run `/reload`. Set `disableAllHooks: true` to skip an individual hook source.
 
@@ -175,7 +177,7 @@ Default timeouts are 30 seconds for Copilot and 600 seconds for Codex. Codex ses
 
 Hook processes receive `PLUGIN_ROOT`, `PLUGIN_DATA`, `COPILOT_PLUGIN_ROOT/DATA`, and `CLAUDE_PLUGIN_ROOT/DATA`. Data uses the same persistent directory as MCP. Shell hooks can use `$PLUGIN_ROOT`. Values in `env` and direct-exec arguments are literal, with no config-value expansion.
 
-Hooks run in Pi's session working directory by default. The loader resolves an explicit `cwd` relative to that directory. On operation abort or runtime shutdown, it cancels POSIX process groups or the direct child on Windows. It adds context as custom Pi messages rather than overwriting the system prompt.
+Hooks run in Pi's session working directory by default. In an explicit `cwd`, the loader expands `${PLUGIN_ROOT}` and `${PLUGIN_DATA}`, including their `COPILOT_PLUGIN` and `CLAUDE_PLUGIN` aliases. It then resolves relative paths against the session working directory. Other environment references remain literal; `cwd` never evaluates shell commands. On operation abort or runtime shutdown, it cancels POSIX process groups or the direct child on Windows. It adds context as custom Pi messages rather than overwriting the system prompt.
 
 ## Development
 

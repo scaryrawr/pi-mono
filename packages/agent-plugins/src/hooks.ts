@@ -375,12 +375,17 @@ export class HookRuntime {
         ? ["-NoProfile", "-Command", command]
         : ["-c", command];
 
+    const cwd = h.cwd?.replaceAll(
+      /\$\{(?:PLUGIN|COPILOT_PLUGIN|CLAUDE_PLUGIN)_(ROOT|DATA)\}/g,
+      (_placeholder, kind: string) => (kind === "ROOT" ? hook.plugin.root : data),
+    );
+
     const short = hook.event === "SessionEnd" || hook.event === "Interrupt";
     const seconds = h.timeout ?? (hook.codex ? (short ? 1 : 600) : 30);
 
     return new Promise((resolve) => {
       const child = spawn(executable, args, {
-        cwd: h.cwd ? path.resolve(ctx.cwd, h.cwd) : ctx.cwd,
+        cwd: cwd ? path.resolve(ctx.cwd, cwd) : ctx.cwd,
         env: {
           ...process.env,
           ...h.env,

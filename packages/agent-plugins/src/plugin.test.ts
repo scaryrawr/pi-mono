@@ -76,9 +76,64 @@ it("accepts manifests without $schema and discovers their skills", async () => {
     path.join(await realpath(root), "skills/better-init/SKILL.md"),
   ]);
   assert.deepEqual(warnings, [
-    "Ignoring unknown plugin.json field: skills",
-    "Ignoring unknown plugin.json field: agents",
+    "Ignoring agents component for better-init: Pi does not support custom agents",
   ]);
+});
+
+it("honors schema-less Copilot skill directories and deduplicates canonical files", async () => {
+  const root = await fixture({ name: "example", skills: ["custom/", "./custom/", "alias/"] });
+  await mkdir(path.join(root, "custom/good"), { recursive: true });
+  await writeFile(
+    path.join(root, "custom/good/SKILL.md"),
+    "---\nname: good\ndescription: Custom skill\n---\n",
+  );
+  await symlink(path.join(root, "custom"), path.join(root, "alias"));
+  await mkdir(path.join(root, "skills/unused"), { recursive: true });
+  await writeFile(
+    path.join(root, "skills/unused/SKILL.md"),
+    "---\nname: unused\ndescription: Not selected\n---\n",
+  );
+  const warnings: string[] = [];
+  const result = await loadPlugin(root, (message) => warnings.push(message));
+  assert.deepEqual(result.skillPaths, [path.join(await realpath(root), "custom/good/SKILL.md")]);
+  assert.deepEqual(warnings, []);
+});
+
+it("isolates invalid Copilot skill paths from valid siblings", async () => {
+  const outside = await fixture();
+
+  const root = await fixture({
+    name: "example",
+    skills: ["escape/", "../", outside, "missing/", 1, "custom/"],
+  });
+
+  await symlink(outside, path.join(root, "escape"));
+  await mkdir(path.join(root, "custom/good"), { recursive: true });
+  await writeFile(
+    path.join(root, "custom/good/SKILL.md"),
+    "---\nname: good\ndescription: Valid\n---\n",
+  );
+  const warnings: string[] = [];
+  const result = await loadPlugin(root, (message) => warnings.push(message));
+  assert.deepEqual(result.skillPaths, [path.join(await realpath(root), "custom/good/SKILL.md")]);
+  assert.equal(warnings.length, 5);
+});
+
+it("keeps portable skill locations fixed even with Copilot component fields", async () => {
+  const root = await fixture({
+    $schema: "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+    name: "example",
+    skills: "custom/",
+  });
+
+  await mkdir(path.join(root, "custom/good"), { recursive: true });
+  await writeFile(
+    path.join(root, "custom/good/SKILL.md"),
+    "---\nname: good\ndescription: Not portable\n---\n",
+  );
+  const warnings: string[] = [];
+  assert.deepEqual((await loadPlugin(root, (message) => warnings.push(message))).skillPaths, []);
+  assert.deepEqual(warnings, ["Ignoring unknown plugin.json field: skills"]);
 });
 
 it("loads Codex manifests while keeping skills rooted at the plugin directory", async () => {

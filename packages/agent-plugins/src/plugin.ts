@@ -34,6 +34,8 @@ const manifestSchema = Compile(
       keywords: Type.Optional(Type.Array(Type.String())),
       extensions: Type.Optional(Type.Unknown()),
       hooks: Type.Optional(Type.Unknown()),
+      skills: Type.Optional(Type.Unknown()),
+      agents: Type.Optional(Type.Unknown()),
     },
     { additionalProperties: true },
   ),
@@ -82,6 +84,9 @@ async function checked(
   location: string,
   kind: "file" | "directory",
 ): Promise<string | undefined> {
+  if (path.isAbsolute(location) || !within(root, path.resolve(root, location)))
+    throw new Error(`Invalid ${location} (path must be relative and inside plugin root)`);
+
   let resolved: string;
 
   try {
@@ -159,35 +164,59 @@ export async function loadPlugin(
     throw new Error("Invalid or unsupported plugin.json (only v1.0.0 is supported)");
   const plugin = manifestSchema.Parse(manifest);
 
-  for (const key of Object.keys(plugin))
+  const hookStyle = manifestPath === path.join(root, "plugin.json") ? "copilot" : "codex";
+  const copilotComponents = hookStyle === "copilot" && plugin.$schema === undefined;
+
+  for (const key of Object.keys(plugin)) {
+    if (copilotComponents && (key === "skills" || key === "agents")) continue;
+
     if (!fields.has(key)) warn(`Ignoring unknown plugin.json field: ${key}`);
+  }
+
+  if (copilotComponents && plugin.agents !== undefined)
+    warn(`Ignoring agents component for ${plugin.name}: Pi does not support custom agents`);
 
   if (plugin.extensions !== undefined && !extensionsSchema.Check(plugin.extensions))
     warn("Ignoring invalid extensions field");
 
   const skillPaths: string[] = [];
 
-  try {
-    const skills = await checked(root, "skills", "directory");
+  const explicitSkills = copilotComponents && plugin.skills !== undefined;
 
-    if (skills) {
+  const skillEntries = explicitSkills
+    ? hookEntriesSchema.Check(plugin.skills)
+      ? plugin.skills
+      : [plugin.skills]
+    : ["skills"];
+
+  for (const entry of skillEntries) {
+    try {
+      if (!hookPathSchema.Check(entry)) throw new Error("Skill paths must be strings");
+      const skills = await checked(root, entry, "directory");
+
+      if (!skills) {
+        if (explicitSkills) warn(`Missing skill directory ${entry}`);
+        continue;
+      }
+
       for (const child of await readdir(skills, { withFileTypes: true })) {
         // Symlinked child directories are allowed only when their resolved target remains in the package.
         try {
-          const directory = await checked(root, path.join("skills", child.name), "directory");
+          const directory = await checked(root, path.join(entry, child.name), "directory");
 
           if (!directory) continue;
-          const file = await checked(root, path.join("skills", child.name, "SKILL.md"), "file");
+          const file = await checked(root, path.join(entry, child.name, "SKILL.md"), "file");
 
-          if (file && validSkill(await readFile(file, "utf8"), child.name)) skillPaths.push(file);
-          else if (file) warn(`Skipping invalid skill ${child.name}`);
+          if (file && validSkill(await readFile(file, "utf8"), child.name)) {
+            if (!skillPaths.includes(file)) skillPaths.push(file);
+          } else if (file) warn(`Skipping invalid skill ${child.name}`);
         } catch (error) {
           warn(`Skipping skill ${child.name}: ${String(error)}`);
         }
       }
+    } catch (error) {
+      warn(`Ignoring invalid skills component: ${String(error)}`);
     }
-  } catch (error) {
-    warn(`Ignoring invalid skills component: ${String(error)}`);
   }
 
   // Prompts are NOT a portable v1 component: only a pi-specific extension directory is read.
@@ -213,7 +242,6 @@ export async function loadPlugin(
     warn(`Ignoring invalid prompts extension: ${String(error)}`);
   }
 
-  const hookStyle = manifestPath === path.join(root, "plugin.json") ? "copilot" : "codex";
   const hookSources: unknown[] = [];
 
   const entries =
@@ -228,7 +256,8 @@ export async function loadPlugin(
   for (const entry of entries) {
     try {
       if (hookPathSchema.Check(entry)) {
-        if (!entry.startsWith("./")) throw new Error("Hook paths must start with ./");
+        if (hookStyle === "codex" && !entry.startsWith("./"))
+          throw new Error("Hook paths must start with ./");
         const file = await checked(root, entry, "file");
 
         if (file) hookSources.push(JSON.parse(await readFile(file, "utf8")));

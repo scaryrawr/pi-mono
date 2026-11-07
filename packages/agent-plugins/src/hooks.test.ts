@@ -110,6 +110,114 @@ it("discovers both defaults, inline and explicit hook sources without escaping p
   expect((await loadPlugin(outside.root)).hookSources).toHaveLength(1);
 });
 
+it("loads ScaryPilot-style hooks and executes scripts from the expanded plugin cwd", async () => {
+  const { root, ctx } = await fixture();
+  await mkdir(path.join(root, "hooks"));
+  await mkdir(path.join(root, "workspace"));
+  ctx.cwd = path.join(root, "workspace");
+  await mkdir(path.join(root, "skills"));
+  await writeFile(
+    path.join(root, "plugin.json"),
+    JSON.stringify({ name: "anti-slop", skills: ["skills/"], hooks: "hooks/hooks.json" }),
+  );
+  await writeFile(
+    path.join(root, "hooks/guard.cjs"),
+    `process.stdout.write(JSON.stringify({permissionDecision:"deny",permissionDecisionReason:process.cwd()}));`,
+  );
+  await writeFile(
+    path.join(root, "hooks/hooks.json"),
+    JSON.stringify({
+      version: 1,
+      hooks: {
+        preToolUse: [
+          {
+            matcher: "edit",
+            exec: process.execPath,
+            args: ["hooks/guard.cjs"],
+            cwd: "${PLUGIN_ROOT}",
+            timeoutSec: 10,
+          },
+        ],
+      },
+    }),
+  );
+  const warnings: string[] = [];
+  const runtime = new HookRuntime((message) => warnings.push(message));
+
+  try {
+    const loaded = await loadPlugin(root, (message) => warnings.push(message));
+    expect(loaded.hookSources).toHaveLength(1);
+    runtime.load([loaded]);
+    expect(
+      await runtime.run("PreToolUse", { tool_name: "edit", tool_input: { path: "test.ts" } }, ctx),
+    ).toMatchObject({ block: await realpath(root) });
+    expect(warnings).toEqual([]);
+  } finally {
+    runtime.dispose();
+  }
+});
+
+it("rejects absolute, escaping and symlinked hook paths while retaining valid siblings", async () => {
+  const { root } = await fixture();
+  const outside = await fixture("codex");
+  await writeFile(path.join(root, "good.json"), '{"hooks":{}}');
+  await symlink(
+    path.join(outside.root, ".codex-plugin/plugin.json"),
+    path.join(root, "escape.json"),
+  );
+  await writeFile(
+    path.join(root, "plugin.json"),
+    JSON.stringify({
+      name: "fixture",
+      hooks: [path.join(root, "good.json"), "../plugin.json", "escape.json", "good.json"],
+    }),
+  );
+  const warnings: string[] = [];
+  expect((await loadPlugin(root, (message) => warnings.push(message))).hookSources).toEqual([
+    { hooks: {} },
+  ]);
+  expect(warnings).toHaveLength(3);
+});
+
+it("expands plugin root and data aliases only in hook cwd", async () => {
+  const { root, ctx } = await fixture();
+  const runtime = new HookRuntime(vi.fn());
+
+  try {
+    for (const alias of [
+      "PLUGIN_ROOT",
+      "COPILOT_PLUGIN_ROOT",
+      "CLAUDE_PLUGIN_ROOT",
+      "PLUGIN_DATA",
+      "COPILOT_PLUGIN_DATA",
+      "CLAUDE_PLUGIN_DATA",
+    ]) {
+      runtime.load([
+        plugin(root, {
+          hooks: {
+            sessionStart: [
+              {
+                exec: process.execPath,
+                args: [
+                  "-e",
+                  `process.stdout.write(JSON.stringify({additionalContext:process.cwd()}));`,
+                ],
+                cwd: `\${${alias}}`,
+              },
+            ],
+          },
+        }),
+      ]);
+      const output = await runtime.run("SessionStart", { source: "startup" }, ctx);
+
+      if (alias.endsWith("ROOT")) expect(output.context).toBe(await realpath(root));
+      else expect(output.context).toContain("plugin-data");
+    }
+  } finally {
+    runtime.dispose();
+  }
+});
+
 it("isolates malformed handlers, unsupported events/types, invalid regex and disabled sources", async () => {
   const { root } = await fixture();
   const warn = vi.fn();
